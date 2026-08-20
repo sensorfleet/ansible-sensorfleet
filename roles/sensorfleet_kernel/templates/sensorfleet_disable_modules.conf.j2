@@ -1,0 +1,7 @@
+# Managed by Ansible - do not edit manually, changes will be overwritten
+{% for module in sensorfleet_kernel_disabled_modules %}
+install {{ module }} /bin/false
+{% endfor %}
+{% if sensorfleet_kernel_disable_usb_storage %}
+install usb-storage /bin/false
+{% endif %}

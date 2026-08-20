@@ -1,0 +1,46 @@
+source s_src {
+       system();
+       internal();
+};
+
+destination d_loghost {
+    network(
+        "{{ sensorfleet_logging_loghost_host }}"
+        port({{ sensorfleet_logging_loghost_port }})
+        transport(tls)
+        so-keepalive(yes) keep-alive(yes)
+{% if sensorfleet_logging_loghost_syslogprotocol_flag %}
+        flags(syslog-protocol)
+{% endif %}
+        tls(
+{% if sensorfleet_logging_loghost_tls_key != None %}
+            key-file(/etc/syslog-ng/tls/key.pem)
+{% endif %}
+{% if sensorfleet_logging_loghost_tls_cert != None %}
+            cert-file(/etc/syslog-ng/tls/cert.pem)
+{% endif %}
+{% if sensorfleet_logging_loghost_tls_verify %}
+            ca-dir(/etc/syslog-ng/tls/ca.d)
+{% else %}
+            peer-verify(optional-untrusted)
+{% endif %}
+{% if sensorfleet_logging_loghost_tls_ssloptions != None %}
+            ssl-options({{ sensorfleet_logging_loghost_tls_ssloptions }})
+{% endif %}
+        )
+{% if sensorfleet_logging_loghost_enable_disk_buffer %}
+        disk-buffer(
+            disk-buf-size({{ sensorfleet_logging_loghost_disk_buffer_size }})
+{% if sensorfleet_logging_loghost_disk_buffer_reliable %}
+            mem-buf-length({{ sensorfleet_logging_loghost_disk_buffer_membuf_size }})
+            reliable(yes)
+{% else %}
+            mem-buf-size({{ sensorfleet_logging_loghost_disk_buffer_membuf_length }})
+            reliable(no)
+{% endif %}
+        )
+{% endif %}
+    );
+};
+
+log { source(s_src); destination(d_loghost); };

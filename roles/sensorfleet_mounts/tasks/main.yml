@@ -1,0 +1,19 @@
+---
+- name: Ensure mount point directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  loop:
+    - /mnt/transient-data
+    - /mnt/persistent-data
+
+- name: Configure and mount transient-data as tmpfs
+  ansible.posix.mount:
+    path: /mnt/transient-data
+    src: tmpfs
+    fstype: tmpfs
+    opts: mode=0750
+    state: mounted

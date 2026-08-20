@@ -1,0 +1,16 @@
+---
+
+sensorfleet_firewall_ferm_rules: []
+sensorfleet_firewall_allow_ssh_from_anywhere: true
+
+sensorfleet_firewall_ipv6_enable: false
+sensorfleet_firewall_ipv6_autoconfig: false
+
+sensorfleet_firewall_allow_ingress_icmp4: false
+sensorfleet_firewall_allow_ingress_icmp6: false
+sensorfleet_firewall_allow_egress_icmp4: true
+sensorfleet_firewall_allow_egress_icmp6: true
+
+sensorfleet_firewall_remove_alien_dropins: false
+
+sensorfleet_firewall_enforce_egress_policy: true

@@ -1,0 +1,19 @@
+{% if 'fleetmgmt' in group_names %}
+domain (ip ip6) {
+    table filter {
+        chain INPUT {
+            # accept OpenVPN connections from sensors anywhere
+            proto udp dport {{ sensorfleet_globals_openvpn_server_port }} ACCEPT;
+        }
+    }
+}
+{% else %}
+domain (ip) {
+    table filter {
+        chain OUTPUT {
+            # allow the openvpn client to reach the FM's OpenVPN server
+            mod owner uid-owner openvpn daddr {{ sensorfleet_openvpn_server_connect_ip }} proto udp dport {{ sensorfleet_globals_openvpn_server_port }} ACCEPT;
+        }
+    }
+}
+{% endif %}

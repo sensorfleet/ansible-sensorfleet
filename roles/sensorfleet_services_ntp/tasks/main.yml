@@ -1,0 +1,8 @@
+---
+- name: Include FM NTP tasks
+  ansible.builtin.include_tasks: ntp_fm.yml
+  when: "'fleetmgmt' in group_names"
+
+- name: Include sensor NTP tasks
+  ansible.builtin.include_tasks: ntp_sensor.yml
+  when: "'fleetmgmt' not in group_names"

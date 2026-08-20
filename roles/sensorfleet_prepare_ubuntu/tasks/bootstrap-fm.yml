@@ -1,0 +1,56 @@
+---
+- name: Copy SensorFleet apt repository GPG key
+  ansible.builtin.copy:
+    src: repository.sensorfleet.com.gpg
+    dest: /etc/apt/trusted.gpg.d/repository.sensorfleet.com.gpg
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install OS repository to apt sources.list
+  ansible.builtin.template:
+    src: sources.list.j2
+    dest: /etc/apt/sources.list
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install fleet repository to apt sources.list.d
+  ansible.builtin.template:
+    src: sensorfleet.list.j2
+    dest: /etc/apt/sources.list.d/sensorfleet.list
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install apt authentication configuration for direct repositories
+  ansible.builtin.template:
+    src: apt-auth.conf.j2
+    dest: /etc/apt/auth.conf.d/sensorfleet.conf
+    owner: root
+    group: root
+    mode: "0600"
+  when:
+    - sensorfleet_repos_repository_login is not none
+    - sensorfleet_repos_repository_password is not none
+
+- name: Remove apt authentication configuration for direct repositories
+  ansible.builtin.file:
+    path: /etc/apt/auth.conf.d/sensorfleet.conf
+    state: absent
+  when: >-
+    sensorfleet_repos_repository_login is none or
+    sensorfleet_repos_repository_password is none
+
+- name: Install sensorfleet-fleet-tool and sensorfleet-fleetcert packages
+  ansible.builtin.apt:
+    name:
+      - sensorfleet-fleet-tool
+      - sensorfleet-fleetcert
+    state: present
+    update_cache: true
+    install_recommends: false
+  register: sensorfleet_prepare_ubuntu_bootstrap_fm_result
+  until: sensorfleet_prepare_ubuntu_bootstrap_fm_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"

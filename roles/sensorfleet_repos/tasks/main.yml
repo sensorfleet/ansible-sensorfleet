@@ -1,0 +1,20 @@
+---
+- name: Copy SensorFleet apt repository GPG key
+  ansible.builtin.copy:
+    src: repository.sensorfleet.com.gpg
+    dest: /etc/apt/trusted.gpg.d/repository.sensorfleet.com.gpg
+    owner: root
+    group: root
+    mode: "0664"
+  notify: Update apt cache
+
+- name: Include FM repository tasks
+  ansible.builtin.include_tasks: repository_fm.yml
+  when: sensorfleet_globals_use_fm_repo_service
+
+- name: Include direct repository tasks
+  ansible.builtin.include_tasks: repository_direct.yml
+  when: not sensorfleet_globals_use_fm_repo_service
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

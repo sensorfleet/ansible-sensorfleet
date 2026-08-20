@@ -1,0 +1,10 @@
+---
+- name: Write fleet instruments config
+  ansible.builtin.command: fleet config write -
+  args:
+    stdin: "{{ sensorfleet_instruments_new | to_yaml }}"
+  register: sensorfleet_instruments_write_result
+  until: sensorfleet_instruments_write_result is succeeded
+  retries: "{{ sensorfleet_globals_fleet_retries }}"
+  delay: "{{ sensorfleet_globals_fleet_retry_delay_seconds }}"
+  changed_when: true

@@ -1,0 +1,95 @@
+---
+- name: Show current fleet configuration
+  ansible.builtin.command: fleet config show
+  register: sensorfleet_config_show_result
+  until: sensorfleet_config_show_result is succeeded
+  retries: "{{ sensorfleet_globals_fleet_retries }}"
+  delay: "{{ sensorfleet_globals_fleet_retry_delay_seconds }}"
+  changed_when: false
+  check_mode: false
+
+- name: Set fleet configuration facts
+  ansible.builtin.set_fact:
+    sensorfleet_config_original: "{{ sensorfleet_config_show_result.stdout | from_yaml }}"
+    sensorfleet_config_new: "{{ sensorfleet_config_show_result.stdout | from_yaml }}"
+
+- name: Apply default retention rules override (merge)
+  ansible.builtin.set_fact:
+    sensorfleet_config_new: >-
+      {{ sensorfleet_config_new
+         | combine({'config': {'default_retention_rules': sensorfleet_config_default_retention_rules}}, recursive=True) }}
+  when: >-
+    sensorfleet_config_default_retention_rules is not none and
+    not sensorfleet_config_replace_default_retention_rules
+
+- name: Apply default retention rules override (replace)
+  ansible.builtin.set_fact:
+    sensorfleet_config_new: >-
+      {{ sensorfleet_config_new
+         | combine({'config': sensorfleet_config_new.config
+                     | combine({'default_retention_rules': sensorfleet_config_default_retention_rules})}) }}
+  when: >-
+    sensorfleet_config_default_retention_rules is not none and
+    sensorfleet_config_replace_default_retention_rules
+
+- name: Apply event type retention rules override (merge)
+  ansible.builtin.set_fact:
+    sensorfleet_config_new: >-
+      {{ sensorfleet_config_new
+         | combine({'config': {'event_type_retention_rules': sensorfleet_config_event_type_retention_rules}}, recursive=True) }}
+  when: >-
+    sensorfleet_config_event_type_retention_rules is not none and
+    not sensorfleet_config_replace_event_type_retention_rules
+
+- name: Apply event type retention rules override (replace)
+  ansible.builtin.set_fact:
+    sensorfleet_config_new: >-
+      {{ sensorfleet_config_new
+         | combine({'config': sensorfleet_config_new.config
+                     | combine({'event_type_retention_rules': sensorfleet_config_event_type_retention_rules})}) }}
+  when: >-
+    sensorfleet_config_event_type_retention_rules is not none and
+    sensorfleet_config_replace_event_type_retention_rules
+
+- name: Apply bridges override (merge)
+  ansible.builtin.set_fact:
+    sensorfleet_config_new: >-
+      {{ sensorfleet_config_new
+         | combine({'config': {'bridges': sensorfleet_config_bridges}}, recursive=True) }}
+  when: sensorfleet_config_bridges is not none and not sensorfleet_config_replace_bridges
+
+- name: Apply bridges override (replace)
+  ansible.builtin.set_fact:
+    sensorfleet_config_new: >-
+      {{ sensorfleet_config_new
+         | combine({'config': sensorfleet_config_new.config | combine({'bridges': sensorfleet_config_bridges})}) }}
+  when: sensorfleet_config_bridges is not none and sensorfleet_config_replace_bridges
+
+- name: Apply homenets override (merge)
+  ansible.builtin.set_fact:
+    sensorfleet_config_new: >-
+      {{ sensorfleet_config_new
+         | combine({'config': {'homenets': sensorfleet_config_homenets}}, recursive=True) }}
+  when: sensorfleet_config_homenets is not none and not sensorfleet_config_replace_homenets
+
+- name: Apply homenets override (replace)
+  ansible.builtin.set_fact:
+    sensorfleet_config_new: >-
+      {{ sensorfleet_config_new
+         | combine({'config': sensorfleet_config_new.config | combine({'homenets': sensorfleet_config_homenets})}) }}
+  when: sensorfleet_config_homenets is not none and sensorfleet_config_replace_homenets
+
+- name: Increment fleet configuration version
+  ansible.builtin.set_fact:
+    sensorfleet_config_new: "{{ sensorfleet_config_new | combine({'version': sensorfleet_config_new.version + 1}) }}"
+  when: sensorfleet_config_new != sensorfleet_config_original
+
+- name: Detect fleet configuration changes
+  ansible.builtin.debug:
+    msg: Fleet configuration has changed
+  when: sensorfleet_config_new != sensorfleet_config_original
+  changed_when: true
+  notify: Write fleet config
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

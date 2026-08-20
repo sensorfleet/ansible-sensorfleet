@@ -1,0 +1,7 @@
+---
+- name: Internal certificate changed
+  ansible.builtin.systemd:
+    name: nginx
+    state: reloaded
+  listen: internal certificate changed
+  when: sensorfleet_prepare_ubuntu_bootstrapping is not defined or not sensorfleet_prepare_ubuntu_bootstrapping

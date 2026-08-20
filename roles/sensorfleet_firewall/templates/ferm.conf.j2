@@ -1,0 +1,16 @@
+domain (ip ip6) {
+    table filter {
+        chain INPUT {
+            policy DROP;
+        }
+        chain OUTPUT {
+            policy DROP;
+        }
+        chain FORWARD {
+            policy DROP;
+        }
+    }
+}
+
+@include '/etc/ferm/ferm.d/';
+

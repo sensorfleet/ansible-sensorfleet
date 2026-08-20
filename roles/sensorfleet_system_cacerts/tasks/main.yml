@@ -1,0 +1,63 @@
+---
+- name: Set ca-certificates trust_new_certs debconf value
+  ansible.builtin.debconf:
+    name: ca-certificates
+    question: ca-certificates/trust_new_certs
+    value: "{{ 'yes' if sensorfleet_system_cacerts_cacerts_trust_new_os_certs else 'no' }}"
+    vtype: string
+
+- name: Clear ca-certificates enable_crts debconf value
+  ansible.builtin.debconf:
+    name: ca-certificates
+    question: ca-certificates/enable_crts
+    value: ""
+    vtype: string
+  when: not sensorfleet_system_cacerts_use_os_default_certs
+
+- name: Deselect all entries in /etc/ca-certificates.conf
+  ansible.builtin.replace:
+    path: /etc/ca-certificates.conf
+    regexp: '^(?![#!])(.+)$'
+    replace: '!\1'
+  when: not sensorfleet_system_cacerts_use_os_default_certs
+  notify: Update CA certificates
+
+- name: Ensure local CA certificates directory exists
+  ansible.builtin.file:
+    path: /usr/local/share/ca-certificates/ansible
+    state: directory
+    owner: root
+    mode: "0755"
+
+- name: Install custom CA certificates
+  ansible.builtin.copy:
+    dest: "/usr/local/share/ca-certificates/ansible/{{ item.name }}.crt"
+    content: "{{ item.certificate }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ sensorfleet_system_cacerts_custom_ca_certs }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: Update CA certificates
+
+- name: Find installed custom CA certificates
+  ansible.builtin.find:
+    paths: /usr/local/share/ca-certificates/ansible
+    patterns: "*.crt"
+  register: sensorfleet_system_cacerts_installed_custom_certs
+
+- name: Remove custom CA certificates not present in sensorfleet_system_cacerts_custom_ca_certs
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ sensorfleet_system_cacerts_installed_custom_certs.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when: >-
+    (item.path | basename | regex_replace('\.crt$', ''))
+    not in (sensorfleet_system_cacerts_custom_ca_certs | map(attribute='name') | list)
+  notify: Update CA certificates
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

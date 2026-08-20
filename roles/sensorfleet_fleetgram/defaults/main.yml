@@ -1,0 +1,4 @@
+---
+sensorfleet_fleetgram_enable_tls: true
+sensorfleet_fleetgram_force_initial_sensor_config: false
+sensorfleet_fleetgram_sensor_messaging_fm_only: true

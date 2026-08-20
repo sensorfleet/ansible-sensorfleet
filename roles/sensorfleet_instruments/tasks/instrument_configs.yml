@@ -1,0 +1,73 @@
+---
+- name: Set merged instrument configs fact
+  ansible.builtin.set_fact:
+    sensorfleet_instruments_instrument_configs_merged: >-
+      {{ sensorfleet_instruments_instrument_configs_group
+         | combine(sensorfleet_instruments_instrument_configs_host) }}
+
+- name: Initialize per-instrument configuration facts
+  ansible.builtin.set_fact:
+    sensorfleet_instruments_config_current: "{{ sensorfleet_instruments_config_current | default({}) }}"
+    sensorfleet_instruments_config_new: "{{ sensorfleet_instruments_config_new | default({}) }}"
+
+- name: Show current fleet configuration per instrument
+  ansible.builtin.command: "fleet config show {{ item }}@{{ inventory_hostname_short }}"
+  loop: "{{ sensorfleet_instruments_instrument_configs_merged.keys() | list }}"
+  register: sensorfleet_instruments_config_show_result
+  until: sensorfleet_instruments_config_show_result is succeeded
+  retries: "{{ sensorfleet_globals_fleet_retries }}"
+  delay: "{{ sensorfleet_globals_fleet_retry_delay_seconds }}"
+  changed_when: false
+  check_mode: false
+
+- name: Set fleet configuration facts per instrument
+  ansible.builtin.set_fact:
+    sensorfleet_instruments_config_current: >-
+      {{ sensorfleet_instruments_config_current | default({})
+         | combine({item.item: item.stdout | from_yaml}) }}
+  loop: "{{ sensorfleet_instruments_config_show_result.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Set new fleet configuration per instrument (merge)
+  ansible.builtin.set_fact:
+    sensorfleet_instruments_config_new: >-
+      {{ sensorfleet_instruments_config_new | default({})
+         | combine({item.key: sensorfleet_instruments_config_current[item.key]
+                     | combine({'config': item.value}, recursive=True)}) }}
+  loop: "{{ sensorfleet_instruments_instrument_configs_merged | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when: not sensorfleet_instruments_replace_instrument_configuration
+
+- name: Set new fleet configuration per instrument (replace)
+  ansible.builtin.set_fact:
+    sensorfleet_instruments_config_new: >-
+      {{ sensorfleet_instruments_config_new | default({})
+         | combine({item.key: sensorfleet_instruments_config_current[item.key]
+                     | combine({'config': item.value})}) }}
+  loop: "{{ sensorfleet_instruments_instrument_configs_merged | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when: sensorfleet_instruments_replace_instrument_configuration
+
+- name: Increment fleet configuration version per instrument
+  ansible.builtin.set_fact:
+    sensorfleet_instruments_config_new: >-
+      {{ sensorfleet_instruments_config_new
+         | combine({item: sensorfleet_instruments_config_new[item]
+                     | combine({'version': sensorfleet_instruments_config_new[item].version + 1})}) }}
+  loop: "{{ sensorfleet_instruments_config_new.keys() | list }}"
+  when: sensorfleet_instruments_config_new[item] != sensorfleet_instruments_config_current[item]
+
+- name: Write fleet instrument config
+  ansible.builtin.command: fleet config write -
+  args:
+    stdin: "{{ sensorfleet_instruments_config_new[item] | to_yaml }}"
+  register: sensorfleet_instruments_config_write_result
+  loop: "{{ sensorfleet_instruments_config_new.keys() | list }}"
+  when: sensorfleet_instruments_config_new[item] != sensorfleet_instruments_config_current[item]
+  until: sensorfleet_instruments_config_write_result is succeeded
+  retries: "{{ sensorfleet_globals_fleet_retries }}"
+  delay: "{{ sensorfleet_globals_fleet_retry_delay_seconds }}"
+  changed_when: true

@@ -1,0 +1,32 @@
+{
+    "target": "sensors@{{ inventory_hostname_short }}",
+    "version": 10,
+    "source_instrument": "imaginary",
+    "uuid": "6874ccac-3c78-46a3-9ee2-46e9e2993760",
+    "timestamp": 0.0,
+    "config": {
+{% set sensorfleet_fleetgram_config_entries = [] %}
+{% set sensorfleet_fleetgram_sensors_to_render = groups.get('sensors', []) if ('fleetmgmt' in group_names or not sensorfleet_fleetgram_sensor_messaging_fm_only) else [inventory_hostname] %}
+{% for fleetmgmt in groups['fleetmgmt'] %}
+{% set _ = sensorfleet_fleetgram_config_entries.append({
+    'name': hostvars[fleetmgmt]['inventory_hostname_short'],
+    'url': 'tcp://169.254.255.255:51337',
+    'relay': true
+}) %}
+{% endfor %}
+{% for sensor in sensorfleet_fleetgram_sensors_to_render %}
+{% set _ = sensorfleet_fleetgram_config_entries.append({
+    'name': hostvars[sensor]['inventory_hostname_short'],
+    'url': 'tcp://' ~ hostvars[sensor]['sensorfleet_openvpn_client_ip'] ~ ':51337',
+    'relay': false
+}) %}
+{% endfor %}
+{% for entry in sensorfleet_fleetgram_config_entries %}
+          "{{ entry.name }}": {
+            "url": "{{ entry.url }}",
+            "relay": {{ entry.relay | tojson }},
+            "tls": {{ sensorfleet_fleetgram_enable_tls | tojson }}
+          }{{ "," if not loop.last else "" }}
+{% endfor %}
+    }
+}

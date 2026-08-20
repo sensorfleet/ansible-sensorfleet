@@ -1,0 +1,7 @@
+---
+sensorfleet_instruments_group: {}
+sensorfleet_instruments_host: {}
+sensorfleet_instruments_instrument_configs_group: {}
+sensorfleet_instruments_instrument_configs_host: {}
+sensorfleet_instruments_replace_configuration: false
+sensorfleet_instruments_replace_instrument_configuration: true

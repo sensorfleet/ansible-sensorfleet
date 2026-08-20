@@ -1,0 +1,10 @@
+---
+sensorfleet_config_bridges: null
+sensorfleet_config_event_type_retention_rules: null
+sensorfleet_config_default_retention_rules: null
+sensorfleet_config_homenets: null
+
+sensorfleet_config_replace_bridges: false
+sensorfleet_config_replace_homenets: true
+sensorfleet_config_replace_default_retention_rules: false
+sensorfleet_config_replace_event_type_retention_rules: false

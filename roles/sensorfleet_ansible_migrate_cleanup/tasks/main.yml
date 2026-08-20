@@ -1,0 +1,63 @@
+---
+- name: Remove legacy ta.key
+  ansible.builtin.file:
+    path: /etc/sensorfleet/ta.key
+    state: absent
+
+- name: Remove legacy VPN server CSR
+  ansible.builtin.file:
+    path: /etc/sensorfleet/vpnserver.csr
+    state: absent
+  when: "'fleetmgmt' in group_names"
+
+- name: Remove legacy VPN server certificate
+  ansible.builtin.file:
+    path: /etc/sensorfleet/vpnserver.pem
+    state: absent
+  when: "'fleetmgmt' in group_names"
+
+- name: Remove legacy VPN server private key
+  ansible.builtin.file:
+    path: /etc/sensorfleet/vpnserver_key.pem
+    state: absent
+  when: "'fleetmgmt' in group_names"
+
+- name: Remove legacy VPN client CSR
+  ansible.builtin.file:
+    path: /etc/sensorfleet/vpnclient.csr
+    state: absent
+  when: "'sensors' in group_names"
+
+- name: Remove legacy VPN client certificate
+  ansible.builtin.file:
+    path: /etc/sensorfleet/vpnclient.pem
+    state: absent
+  when: "'sensors' in group_names"
+
+- name: Remove legacy VPN client private key
+  ansible.builtin.file:
+    path: /etc/sensorfleet/vpnclient_key.pem
+    state: absent
+  when: "'sensors' in group_names"
+
+- name: Remove legacy apt auth.conf
+  ansible.builtin.file:
+    path: /etc/apt/auth.conf
+    state: absent
+
+- name: Remove superseded legacy ferm dropins
+  ansible.builtin.file:
+    path: "/etc/ferm/ferm.d/{{ item }}"
+    state: absent
+  loop:
+    - 10-sensorfleet-fm-ntp.conf
+    - 99-ansible-custom-rules.conf
+
+- name: Remove sensorfleet-release package
+  ansible.builtin.apt:
+    name: sensorfleet-release
+    state: absent
+  register: sensorfleet_ansible_migrate_cleanup_release_pkg_result
+  until: sensorfleet_ansible_migrate_cleanup_release_pkg_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"

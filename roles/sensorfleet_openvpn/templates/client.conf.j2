@@ -1,0 +1,40 @@
+client
+dev tun-mgmt
+proto udp
+cipher {{ sensorfleet_openvpn_cipher }}
+ncp-ciphers {{ sensorfleet_openvpn_cipher }}
+auth SHA512
+{% if sensorfleet_openvpn_dhparams != None %}
+<dh>
+{{ sensorfleet_openvpn_dhparams }}
+</dh>
+{% else %}
+dh none
+{% endif %}
+tls-cipher {{ sensorfleet_openvpn_tls_cipher }}
+remote {{ sensorfleet_openvpn_server_connect_ip }} {{ sensorfleet_globals_openvpn_server_port }}
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+keepalive 5 15
+{% if sensorfleet_openvpn_require_key_usage_in_certificate %}
+remote-cert-tls server
+{% endif %}
+tls-version-min 1.2
+tls-version-max 1.2
+key-direction 1
+tun-mtu 1500
+fragment 1300
+mssfix
+{% if sensorfleet_openvpn_cachain_file is defined and sensorfleet_openvpn_cachain_file.stat.exists %}
+ca /etc/sensorfleet/ca_chain.pem
+{% else %}
+ca /etc/sensorfleet/ca.pem
+{% endif %}
+cert /etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.crt
+key /etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.key
+tls-auth /etc/sensorfleet/openvpn/ta.key
+{% if sensorfleet_openvpn_crl_verify != None %}
+crl-verify {{ sensorfleet_openvpn_crl_verify }}
+{% endif %}

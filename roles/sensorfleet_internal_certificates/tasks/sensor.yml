@@ -1,0 +1,36 @@
+---
+- name: Slurp internal CA certificate from FM
+  ansible.builtin.slurp:
+    src: /etc/sensorfleet/ca.pem
+  register: sensorfleet_internal_certificates_ca_slurp
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Write internal CA certificate to sensor
+  ansible.builtin.copy:
+    content: "{{ sensorfleet_internal_certificates_ca_slurp.content | b64decode }}"
+    dest: /etc/sensorfleet/ca.pem
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Check if chained CA mode is enabled on FM
+  ansible.builtin.stat:
+    path: /etc/sensorfleet/ca_chain.pem
+  register: sensorfleet_internal_certificates_fm_ca_chain_stat
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Slurp internal CA chain certificate from FM
+  ansible.builtin.slurp:
+    src: /etc/sensorfleet/ca_chain.pem
+  register: sensorfleet_internal_certificates_ca_chain_slurp
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+  when: sensorfleet_internal_certificates_fm_ca_chain_stat.stat.exists
+
+- name: Write internal CA chain certificate to sensor
+  ansible.builtin.copy:
+    content: "{{ sensorfleet_internal_certificates_ca_chain_slurp.content | b64decode }}"
+    dest: /etc/sensorfleet/ca_chain.pem
+    owner: root
+    group: root
+    mode: "0644"
+  when: sensorfleet_internal_certificates_fm_ca_chain_stat.stat.exists

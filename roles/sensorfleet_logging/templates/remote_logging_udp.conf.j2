@@ -1,0 +1,17 @@
+source s_src {
+       system();
+       internal();
+};
+
+destination d_loghost {
+    network(
+        "{{ sensorfleet_logging_loghost_host }}"
+        port({{ sensorfleet_logging_loghost_port }})
+        transport(udp)
+{% if sensorfleet_logging_loghost_syslogprotocol_flag %}
+        flags(syslog-protocol)
+{% endif %}
+    );
+};
+
+log { source(s_src); destination(d_loghost); };

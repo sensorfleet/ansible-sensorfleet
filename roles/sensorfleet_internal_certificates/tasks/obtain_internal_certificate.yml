@@ -1,0 +1,51 @@
+---
+- name: Generate internal certificate key and CSR
+  ansible.builtin.command: >-
+    fleetcert internal
+    --key /etc/sensorfleet/tls/internal/{{ inventory_hostname_short }}.key
+    --hostname {{ inventory_hostname_short }}
+    --ip {{ sensorfleet_openvpn_client_ip }}
+    csr /etc/sensorfleet/csr/{{ inventory_hostname_short }}.internal.csr
+  args:
+    creates: "/etc/sensorfleet/csr/{{ inventory_hostname_short }}.internal.csr"
+
+- name: Slurp internal certificate CSR
+  ansible.builtin.slurp:
+    src: "/etc/sensorfleet/csr/{{ inventory_hostname_short }}.internal.csr"
+  register: sensorfleet_internal_certificates_csr_slurp
+  when: "'fleetmgmt' not in group_names"
+
+- name: Write internal certificate CSR to FM
+  ansible.builtin.copy:
+    content: "{{ sensorfleet_internal_certificates_csr_slurp.content | b64decode }}"
+    dest: "/etc/sensorfleet/csr/{{ inventory_hostname_short }}.internal.csr"
+    owner: root
+    group: root
+    mode: "0644"
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+  when: "'fleetmgmt' not in group_names"
+
+- name: Sign internal certificate
+  ansible.builtin.command: >-
+    fleetcert ca sign
+    /etc/sensorfleet/csr/{{ inventory_hostname_short }}.internal.csr
+    /etc/sensorfleet/tls/internal/{{ inventory_hostname_short }}.crt
+  throttle: 1
+  changed_when: true
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Slurp signed internal certificate from FM
+  ansible.builtin.slurp:
+    src: "/etc/sensorfleet/tls/internal/{{ inventory_hostname_short }}.crt"
+  register: sensorfleet_internal_certificates_crt_slurp
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+  when: "'fleetmgmt' not in group_names"
+
+- name: Write signed internal certificate locally
+  ansible.builtin.copy:
+    content: "{{ sensorfleet_internal_certificates_crt_slurp.content | b64decode }}"
+    dest: "/etc/sensorfleet/tls/internal/{{ inventory_hostname_short }}.crt"
+    owner: root
+    group: root
+    mode: "0644"
+  when: "'fleetmgmt' not in group_names"

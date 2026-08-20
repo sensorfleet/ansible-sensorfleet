@@ -1,0 +1,69 @@
+---
+- name: Check if FM CA chain exists
+  ansible.builtin.stat:
+    path: /etc/sensorfleet/ca_chain.pem
+  register: sensorfleet_internal_certificates_ca_chain_stat
+
+- name: Create internal CA symlink
+  ansible.builtin.file:
+    src: >-
+      {{ '/etc/sensorfleet/ca_chain.pem'
+         if sensorfleet_internal_certificates_ca_chain_stat.stat.exists
+         else '/etc/sensorfleet/ca.pem' }}
+    dest: /etc/ssl/sensorfleet/internal-ca.crt
+    state: link
+  notify: internal certificate changed
+
+- name: Create internal certificate symlink
+  ansible.builtin.file:
+    src: "/etc/sensorfleet/tls/internal/{{ inventory_hostname_short }}.crt"
+    dest: /etc/ssl/sensorfleet/internal.crt
+    state: link
+  notify: internal certificate changed
+
+- name: Create internal certificate key symlink
+  ansible.builtin.file:
+    src: "/etc/sensorfleet/tls/internal/{{ inventory_hostname_short }}.key"
+    dest: /etc/ssl/sensorfleet/internal.key
+    state: link
+  notify: internal certificate changed
+
+- name: Install nginx proxy TLS auth verify depth configuration
+  ansible.builtin.template:
+    src: 02-proxy-tlsauth-verify-depth.conf.j2
+    dest: /etc/nginx/sensor-internal.proxy.d/02-proxy-tlsauth-verify-depth.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: sensorfleet_prepare_ubuntu_bootstrapping is not defined or not sensorfleet_prepare_ubuntu_bootstrapping
+  notify: internal certificate changed
+
+- name: Install nginx TLS auth verify depth configuration
+  ansible.builtin.template:
+    src: 02-ssl-verify-depth.conf.j2
+    dest: /etc/nginx/sensor-internal.d/02-proxy-tlsauth-verify-depth.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: sensorfleet_prepare_ubuntu_bootstrapping is not defined or not sensorfleet_prepare_ubuntu_bootstrapping
+  notify: internal certificate changed
+
+- name: Install nginx client certificate verification configuration
+  ansible.builtin.template:
+    src: 01-verify-client.conf.j2
+    dest: /etc/nginx/sensor-internal.d/01-verify-client.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: sensorfleet_prepare_ubuntu_bootstrapping is not defined or not sensorfleet_prepare_ubuntu_bootstrapping
+  notify: internal certificate changed
+
+- name: Install nginx proxy TLS auth verification configuration
+  ansible.builtin.template:
+    src: 01-proxy-tlsauth-verify.conf.j2
+    dest: /etc/nginx/sensor-internal.proxy.d/01-proxy-tlsauth-verify.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: sensorfleet_prepare_ubuntu_bootstrapping is not defined or not sensorfleet_prepare_ubuntu_bootstrapping
+  notify: internal certificate changed

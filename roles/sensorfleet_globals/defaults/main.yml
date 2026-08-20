@@ -1,0 +1,18 @@
+---
+# SensorFleet default options
+
+sensorfleet_globals_sshd_port: 22
+sensorfleet_globals_sshd_additional_ports: []
+sensorfleet_globals_usermgmt_enabled: true
+
+sensorfleet_globals_use_grsec_kernel: false
+sensorfleet_globals_enable_auditd: true
+sensorfleet_globals_use_fm_repo_service: true
+
+sensorfleet_globals_openvpn_server_port: 1194
+
+sensorfleet_globals_fleet_retries: 5
+sensorfleet_globals_fleet_retry_delay_seconds: 3
+
+sensorfleet_globals_apt_lock_retries: 100
+sensorfleet_globals_apt_lock_retry_delay_seconds: 15

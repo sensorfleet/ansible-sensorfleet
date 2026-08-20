@@ -1,0 +1,14 @@
+---
+sensorfleet_sysctl_defaults:
+  net.core.wmem_default: 1048576
+  net.core.wmem_max: 1048576
+  net.core.netdev_max_backlog: 65536
+  net.core.netdev_budget: 3000
+  kernel.panic: 10
+
+sensorfleet_sysctl_grsec_defaults:
+  kernel.grsecurity.audit_chdir: 0
+  kernel.grsecurity.chroot_execlog: 0
+  kernel.grsecurity.exec_logging: 0
+
+sensorfleet_sysctl_overrides: {}

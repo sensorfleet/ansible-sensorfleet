@@ -1,0 +1,32 @@
+---
+- name: Install fleetgram index config
+  ansible.builtin.template:
+    src: index-config-base.json.j2
+    dest: /opt/fleet/etc/.ansible-sensor-index-config.json
+    owner: root
+    group: root
+    mode: "0640"
+  notify:
+    - Write fleet index config
+    - Restart UI service
+
+- name: Check if sensor config exists
+  ansible.builtin.command: "fleet config direct_read {{ inventory_hostname_short }} --out-file -"
+  register: sensorfleet_fleetgram_sensor_config_check
+  changed_when: false
+  check_mode: false
+
+- name: Install initial sensor config
+  ansible.builtin.template:
+    src: sensor-config-base.json.j2
+    dest: /opt/fleet/etc/.ansible-sensor-config.json
+    owner: root
+    group: root
+    mode: "0640"
+  when: sensorfleet_fleetgram_sensor_config_check.stdout | trim == "# No configuration found"
+  notify:
+    - Write fleet sensor config
+    - Restart UI service
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

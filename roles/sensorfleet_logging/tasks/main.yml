@@ -1,0 +1,58 @@
+---
+- name: Include TCP loghost tasks
+  ansible.builtin.include_tasks: loghost_tcp.yml
+  when: sensorfleet_logging_loghost_transport == 'tcp'
+
+- name: Include UDP loghost tasks
+  ansible.builtin.include_tasks: loghost_udp.yml
+  when: sensorfleet_logging_loghost_transport == 'udp'
+
+- name: Include TLS loghost tasks
+  ansible.builtin.include_tasks: loghost_tls.yml
+  when: sensorfleet_logging_loghost_transport == 'tls'
+
+- name: Ensure remote log configuration is absent
+  ansible.builtin.file:
+    path: /etc/syslog-ng/conf.d/99-sensorfleet-remote-log.conf
+    state: absent
+  when: sensorfleet_logging_loghost_transport not in ['tcp', 'udp', 'tls']
+  notify: Reload syslog-ng
+
+- name: Enable component audit logging
+  ansible.builtin.copy:
+    dest: /etc/syslog-ng/conf.d/49-enable-sensorfleet-component-audit.conf
+    content: |
+      @define ENABLE_SF_COMPONENT_AUDIT "true"
+    owner: root
+    group: root
+    mode: "0644"
+  when: sensorfleet_logging_enable_component_audit
+  notify: Reload syslog-ng
+
+- name: Ensure component audit logging configuration is absent
+  ansible.builtin.file:
+    path: /etc/syslog-ng/conf.d/49-enable-sensorfleet-component-audit.conf
+    state: absent
+  when: not sensorfleet_logging_enable_component_audit
+  notify: Reload syslog-ng
+
+- name: Enable instrument audit logging
+  ansible.builtin.copy:
+    dest: /etc/syslog-ng/conf.d/49-enable-sensorfleet-instrument-audit.conf
+    content: |
+      @define ENABLE_SF_INSTRUMENT_AUDIT "true"
+    owner: root
+    group: root
+    mode: "0644"
+  when: sensorfleet_logging_enable_instrument_audit
+  notify: Reload syslog-ng
+
+- name: Ensure instrument audit logging configuration is absent
+  ansible.builtin.file:
+    path: /etc/syslog-ng/conf.d/49-enable-sensorfleet-instrument-audit.conf
+    state: absent
+  when: not sensorfleet_logging_enable_instrument_audit
+  notify: Reload syslog-ng
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

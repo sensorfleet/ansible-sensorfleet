@@ -1,0 +1,121 @@
+---
+- name: Check current openvpn-client@sensorfleet service state
+  ansible.builtin.systemd:
+    name: openvpn-client@sensorfleet
+  register: sensorfleet_openvpn_client_service_state
+  failed_when: false
+  changed_when: false
+
+- name: Determine if openvpn-client@sensorfleet was already active
+  ansible.builtin.set_fact:
+    sensorfleet_openvpn_client_was_active: >-
+      {{ (sensorfleet_openvpn_client_service_state.status is defined) and
+         (sensorfleet_openvpn_client_service_state.status.ActiveState | default('inactive') == 'active') }}
+
+- name: Ensure VPN client CSR exists
+  ansible.builtin.command: >-
+    fleetcert vpnclient
+    --key /etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.key
+    csr /etc/sensorfleet/csr/{{ inventory_hostname_short }}.openvpn.csr
+  args:
+    creates: "/etc/sensorfleet/csr/{{ inventory_hostname_short }}.openvpn.csr"
+  notify: restart openvpn
+
+- name: Slurp VPN client CSR
+  ansible.builtin.slurp:
+    src: "/etc/sensorfleet/csr/{{ inventory_hostname_short }}.openvpn.csr"
+  register: sensorfleet_openvpn_csr_slurp
+
+- name: Write VPN client CSR to FM
+  ansible.builtin.copy:
+    content: "{{ sensorfleet_openvpn_csr_slurp.content | b64decode }}"
+    dest: "/etc/sensorfleet/csr/{{ inventory_hostname_short }}.openvpn.csr"
+    owner: root
+    group: root
+    mode: "0644"
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Include certificate signing tasks
+  ansible.builtin.include_tasks: certificate_sign_local.yml
+
+- name: Slurp signed VPN client certificate from FM
+  ansible.builtin.slurp:
+    src: "/etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.crt"
+  register: sensorfleet_openvpn_crt_slurp
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Write signed VPN client certificate to sensor
+  ansible.builtin.copy:
+    content: "{{ sensorfleet_openvpn_crt_slurp.content | b64decode }}"
+    dest: "/etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.crt"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart openvpn
+
+- name: Slurp shared secret (TA-key) from FM
+  ansible.builtin.slurp:
+    src: /etc/sensorfleet/openvpn/ta.key
+  register: sensorfleet_openvpn_ta_key_slurp
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Write shared secret (TA-key) to sensor
+  ansible.builtin.copy:
+    content: "{{ sensorfleet_openvpn_ta_key_slurp.content | b64decode }}"
+    dest: /etc/sensorfleet/openvpn/ta.key
+    owner: root
+    group: openvpn
+    mode: "0640"
+
+- name: Check if CA chain exists
+  ansible.builtin.stat:
+    path: /etc/sensorfleet/ca_chain.pem
+  register: sensorfleet_openvpn_cachain_file
+
+- name: Install OpenVPN client configuration
+  ansible.builtin.template:
+    src: client.conf.j2
+    dest: /etc/openvpn/client/sensorfleet.conf
+    owner: root
+    group: openvpn
+    mode: "0640"
+  notify: restart openvpn
+
+- name: Ensure systemd override directory exists for openvpn-client
+  ansible.builtin.file:
+    path: /etc/systemd/system/openvpn-client@.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install systemd override for openvpn-client
+  ansible.builtin.copy:
+    src: systemd-override-client.conf
+    dest: /etc/systemd/system/openvpn-client@.service.d/override.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Set permissions on OpenVPN client private key
+  ansible.builtin.file:
+    path: "/etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.key"
+    owner: root
+    group: openvpn
+    mode: "0640"
+
+- name: Install OpenVPN CCD file for sensor
+  ansible.builtin.template:
+    src: openvpn-ccd.j2
+    dest: "/etc/openvpn/server/ccd/{{ inventory_hostname_short }}"
+    owner: root
+    group: openvpn
+    mode: "0640"
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Enable and start openvpn-client@sensorfleet service
+  ansible.builtin.systemd:
+    name: openvpn-client@sensorfleet
+    enabled: true
+    state: started
+    daemon_reload: true

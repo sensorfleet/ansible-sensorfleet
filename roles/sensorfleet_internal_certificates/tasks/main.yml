@@ -1,0 +1,39 @@
+---
+- name: Ensure /etc/sensorfleet/tls/internal directory exists
+  ansible.builtin.file:
+    path: /etc/sensorfleet/tls/internal
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ensure /etc/sensorfleet/csr directory exists
+  ansible.builtin.file:
+    path: /etc/sensorfleet/csr
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Include fleet management certificate tasks
+  ansible.builtin.include_tasks: fm.yml
+  when: "'fleetmgmt' in group_names"
+
+- name: Include sensor certificate tasks
+  ansible.builtin.include_tasks: sensor.yml
+  when: "'fleetmgmt' not in group_names"
+
+- name: Check if internal certificate exists
+  ansible.builtin.stat:
+    path: "/etc/sensorfleet/tls/internal/{{ inventory_hostname_short }}.crt"
+  register: sensorfleet_internal_certificates_internal_crt_stat
+
+- name: Include internal certificate acquisition tasks
+  ansible.builtin.include_tasks: obtain_internal_certificate.yml
+  when: not sensorfleet_internal_certificates_internal_crt_stat.stat.exists
+
+- name: Include certificate configuration tasks
+  ansible.builtin.include_tasks: certificate_config.yml
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

@@ -1,0 +1,6 @@
+---
+sensorfleet_usermgmt_create_initial_admin_account: true
+sensorfleet_usermgmt_default_username: admin
+sensorfleet_usermgmt_default_password: null
+sensorfleet_usermgmt_credential_dir: credentials
+sensorfleet_usermgmt_ui_force_password_change: true

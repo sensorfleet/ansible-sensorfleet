@@ -1,0 +1,108 @@
+---
+- name: Check if /etc/sensorfleet directory exists
+  ansible.builtin.stat:
+    path: /etc/sensorfleet
+  register: sensorfleet_prepare_ubuntu_sensorfleet_dir_stat
+
+- name: Stop run if host is already prepared
+  ansible.builtin.meta: end_host
+  when:
+    - sensorfleet_prepare_ubuntu_sensorfleet_dir_stat.stat.exists
+    - not sensorfleet_prepare_ubuntu_force
+
+- name: Gather installed package facts
+  ansible.builtin.package_facts:
+
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: dist
+    update_cache: true
+  register: sensorfleet_prepare_ubuntu_upgrade_result
+  until: sensorfleet_prepare_ubuntu_upgrade_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+
+- name: Install required Ubuntu base packages
+  ansible.builtin.apt:
+    name: "{{ sensorfleet_prepare_ubuntu_packages }}"
+    state: present
+    install_recommends: false
+  register: sensorfleet_prepare_ubuntu_install_result
+  until: sensorfleet_prepare_ubuntu_install_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+
+- name: Mark required Ubuntu base packages as manually installed
+  ansible.builtin.command: "apt-mark manual {{ sensorfleet_prepare_ubuntu_packages | join(' ') }}"
+  changed_when: false
+
+- name: Create openvpn group
+  ansible.builtin.group:
+    name: openvpn
+    state: present
+
+- name: Create openvpn user
+  ansible.builtin.user:
+    name: openvpn
+    group: openvpn
+    create_home: false
+    shell: /usr/sbin/nologin
+
+- name: Purge Ubuntu packages
+  ansible.builtin.apt:
+    name: "{{ sensorfleet_prepare_ubuntu_purge_packages }}"
+    state: absent
+    purge: true
+  register: sensorfleet_prepare_ubuntu_purge_result
+  until: sensorfleet_prepare_ubuntu_purge_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+
+- name: Gather installed package facts
+  ansible.builtin.package_facts:
+  when: sensorfleet_prepare_ubuntu_keep_packages_with_prefix | length > 0
+
+- name: Determine installed packages matching keep-prefixes
+  ansible.builtin.set_fact:
+    sensorfleet_prepare_ubuntu_keep_packages: >-
+      {{ ansible_facts.packages.keys()
+         | list
+         | select('match', '^(' ~ (sensorfleet_prepare_ubuntu_keep_packages_with_prefix | map('regex_escape') | join('|')) ~ ')')
+         | list }}
+  when: sensorfleet_prepare_ubuntu_keep_packages_with_prefix | length > 0
+
+- name: Mark packages matching keep-prefixes as manually installed
+  ansible.builtin.command: "apt-mark manual {{ sensorfleet_prepare_ubuntu_keep_packages | join(' ') }}"
+  when:
+    - sensorfleet_prepare_ubuntu_keep_packages_with_prefix | length > 0
+    - sensorfleet_prepare_ubuntu_keep_packages | length > 0
+  changed_when: false
+
+- name: Autoremove unused packages
+  ansible.builtin.apt:
+    autoremove: true
+    purge: true
+  register: sensorfleet_prepare_ubuntu_autoremove_result
+  until: sensorfleet_prepare_ubuntu_autoremove_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+
+- name: Reboot the machine  # noqa: no-handler (intentionally immediate, gated on the purge task's result)
+  ansible.builtin.reboot:
+  when: sensorfleet_prepare_ubuntu_purge_result is changed
+
+- name: Include FM bootstrap tasks
+  ansible.builtin.include_tasks: bootstrap-fm.yml
+  when:
+    - "'fleetmgmt' in group_names"
+    - >-
+      'sensorfleet-fleet-tool' not in ansible_facts.packages or
+      'sensorfleet-fleetcert' not in ansible_facts.packages
+
+- name: Include sensor bootstrap tasks
+  ansible.builtin.include_tasks: bootstrap-sensor.yml
+  when:
+    - "'fleetmgmt' not in group_names"
+    - >-
+      'sensorfleet-fleet-tool' not in ansible_facts.packages or
+      'sensorfleet-fleetcert' not in ansible_facts.packages

@@ -1,0 +1,46 @@
+{% if not sensorfleet_firewall_ipv6_enable %}
+domain (ip6) {
+    table filter {
+        chain INPUT {
+            DROP;
+        }
+        chain FORWARD {
+            DROP;
+        }
+        chain OUTPUT {
+            DROP;
+        }
+    }
+}
+{% endif %}
+
+domain (ip ip6) {
+    table filter {
+        chain INPUT {
+            # block local tcp-based mongodb connections
+            interface lo proto tcp dport 27017 REJECT;
+            mod state state (ESTABLISHED RELATED) ACCEPT;
+{% if sensorfleet_firewall_allow_ssh_from_anywhere %}
+            proto tcp dport 22 ACCEPT;
+{% if sensorfleet_globals_sshd_port is defined and sensorfleet_globals_sshd_port != 22 %}
+            proto tcp dport {{ sensorfleet_globals_sshd_port }} ACCEPT;
+{% endif %}
+{% if ansible_port is defined and ansible_port != 22 %}
+            proto tcp dport {{ ansible_port }} ACCEPT;
+{% endif %}
+{% if sensorfleet_globals_sshd_additional_ports %}
+{% for item in sensorfleet_globals_sshd_additional_ports %}
+            proto tcp dport {{ item }} ACCEPT;
+{% endfor %}
+{% endif %}
+{% endif %}
+
+        }
+        chain FORWARD {
+            mod state state (ESTABLISHED RELATED) ACCEPT;
+        }
+        chain OUTPUT {
+            mod state state (ESTABLISHED RELATED) ACCEPT;
+        }
+    }
+}

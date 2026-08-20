@@ -1,0 +1,81 @@
+---
+- name: Include package tasks
+  ansible.builtin.include_tasks: packages.yml
+
+- name: Set root password
+  ansible.builtin.user:
+    name: root
+    password: "{{ sensorfleet_system_root_password }}"
+  when: sensorfleet_system_root_password is not none
+
+- name: Disallow auth configuration import
+  ansible.builtin.file:
+    path: /etc/sensorfleet/allow_auth_import
+    state: absent
+  when: sensorfleet_system_disable_allow_auth_import
+
+- name: Disallow adoption configuration import
+  ansible.builtin.file:
+    path: /etc/sensorfleet/allow_adoption_import
+    state: absent
+  when: sensorfleet_system_disable_allow_adoption_import
+
+- name: Check if bash completion is already installed
+  ansible.builtin.stat:
+    path: /root/.bash_completion
+  register: sensorfleet_system_bash_completion_stat
+
+- name: Generate bash completion script
+  ansible.builtin.command: fleet
+  environment:
+    _FLEET_COMPLETE: bash_source
+  register: sensorfleet_system_bash_completion
+  changed_when: false
+  check_mode: false
+  when: not sensorfleet_system_bash_completion_stat.stat.exists
+
+- name: Install bash completion
+  ansible.builtin.copy:
+    dest: /root/.bash_completion
+    content: "{{ sensorfleet_system_bash_completion.stdout }}\n"
+    owner: root
+    group: root
+    mode: "0644"
+  when: not sensorfleet_system_bash_completion_stat.stat.exists
+
+- name: Disable and mask motd-news units
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: false
+    masked: true
+  loop:
+    - motd-news.timer
+    - motd-news.service
+  failed_when: false
+
+- name: Check if /etc/default/motd-news exists
+  ansible.builtin.stat:
+    path: /etc/default/motd-news
+  register: sensorfleet_system_motd_news_stat
+
+- name: Disable motd-news in /etc/default/motd-news
+  ansible.builtin.lineinfile:
+    path: /etc/default/motd-news
+    regexp: '^ENABLED='
+    line: "ENABLED=0"
+  when: sensorfleet_system_motd_news_stat.stat.exists
+
+- name: Include shell configuration tasks
+  ansible.builtin.include_tasks: shell.yml
+
+- name: Include sudo configuration tasks
+  ansible.builtin.include_tasks: sudo.yml
+
+- name: Include journald configuration tasks
+  ansible.builtin.include_tasks: journald.yml
+
+- name: Include lxd configuration tasks
+  ansible.builtin.include_tasks: lxd.yml
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

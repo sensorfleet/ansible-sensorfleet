@@ -1,0 +1,34 @@
+---
+- name: Load OpenVPN CSR public key
+  ansible.builtin.command: "openssl req -in /etc/sensorfleet/csr/{{ inventory_hostname_short }}.openvpn.csr -noout -pubkey"
+  register: sensorfleet_openvpn_csr_pubkey
+  changed_when: false
+  check_mode: false
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Check if OpenVPN certificate exists
+  ansible.builtin.stat:
+    path: "/etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.crt"
+  register: sensorfleet_openvpn_crt_stat
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Load OpenVPN certificate public key
+  ansible.builtin.command: "openssl x509 -in /etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.crt -noout -pubkey"
+  register: sensorfleet_openvpn_crt_pubkey
+  changed_when: false
+  check_mode: false
+  when: sensorfleet_openvpn_crt_stat.stat.exists
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Sign OpenVPN certificate
+  ansible.builtin.command: >-
+    fleetcert ca sign
+    /etc/sensorfleet/csr/{{ inventory_hostname_short }}.openvpn.csr
+    /etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.crt
+  throttle: 1
+  changed_when: true
+  when: >-
+    not sensorfleet_openvpn_crt_stat.stat.exists or
+    sensorfleet_openvpn_crt_pubkey.stdout != sensorfleet_openvpn_csr_pubkey.stdout
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+  notify: restart openvpn

@@ -1,0 +1,9 @@
+---
+- name: Install remote logging configuration (TCP)
+  ansible.builtin.template:
+    src: remote_logging_tcp.conf.j2
+    dest: /etc/syslog-ng/conf.d/99-sensorfleet-remote-log.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload syslog-ng

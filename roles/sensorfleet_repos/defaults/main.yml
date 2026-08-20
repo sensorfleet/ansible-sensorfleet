@@ -1,0 +1,9 @@
+---
+
+sensorfleet_repos_apt_release: master
+sensorfleet_repos_os_release: jammy
+sensorfleet_repos_repository_fleet: https://repository.sensorfleet.com/fleet
+sensorfleet_repos_repository_os: https://repository.sensorfleet.com/ubuntu-mirror
+
+sensorfleet_repos_repository_login: null
+sensorfleet_repos_repository_password: null

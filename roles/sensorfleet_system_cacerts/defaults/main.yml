@@ -1,0 +1,5 @@
+---
+sensorfleet_system_cacerts_use_os_default_certs: true
+sensorfleet_system_cacerts_cacerts_trust_new_os_certs: true
+
+sensorfleet_system_cacerts_custom_ca_certs: []

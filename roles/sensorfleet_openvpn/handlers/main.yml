@@ -1,0 +1,9 @@
+---
+- name: Restart OpenVPN service
+  ansible.builtin.systemd:
+    name: "{{ 'openvpn-server@sensors' if 'fleetmgmt' in group_names else 'openvpn-client@sensorfleet' }}"
+    state: restarted
+  when: >-
+    ('fleetmgmt' in group_names and sensorfleet_openvpn_server_was_active) or
+    ('fleetmgmt' not in group_names and sensorfleet_openvpn_client_was_active)
+  listen: restart openvpn

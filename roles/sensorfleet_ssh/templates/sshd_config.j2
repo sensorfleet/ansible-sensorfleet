@@ -1,0 +1,84 @@
+# Managed by sensor-ansible, changes will be overwritten
+# Add your overrides in /etc/ssh/sshd_config.d/override.conf
+# if you wish to change these and keep the override.
+Include /etc/ssh/sshd_config.d/*.conf
+
+Protocol {{ sensorfleet_ssh_server_protocol }}
+Port {{ sensorfleet_globals_sshd_port }}
+{% for item in sensorfleet_globals_sshd_additional_ports %}
+Port {{ item }}
+{% endfor %}
+LogLevel {{ sensorfleet_ssh_server_log_level }}
+MaxAuthTries {{ sensorfleet_ssh_server_max_auth_tries }}
+ClientAliveInterval {{ sensorfleet_ssh_server_client_alive_interval }}
+ClientAliveCountMax {{ sensorfleet_ssh_server_client_alive_count_max }}
+LoginGraceTime {{ sensorfleet_ssh_server_login_grace_time }}
+{% if sensorfleet_ssh_server_banner != None %}
+Banner /etc/ssh/banner
+{% endif %}
+MaxStartups {{ sensorfleet_ssh_server_max_startups }}
+
+X11Forwarding {{ sensorfleet_ssh_server_x11_forwarding | ternary("yes", "no") }}
+AllowTcpForwarding {{ sensorfleet_ssh_server_allow_tcp_forwarding | ternary("yes", "no") }}
+IgnoreRHosts {{ sensorfleet_ssh_server_ignore_rhosts | ternary("yes", "no") }}
+HostbasedAuthentication {{ sensorfleet_ssh_server_hostbased_authentication | ternary("yes", "no") }}
+{% if sensorfleet_ssh_server_permit_root_login == "without-password" %}
+PermitRootLogin {{ sensorfleet_ssh_server_permit_root_login }}
+{% else %}
+PermitRootLogin {{ sensorfleet_ssh_server_permit_root_login | ternary("yes", "no") }}
+{% endif %}
+PermitEmptyPasswords {{ sensorfleet_ssh_server_permit_empty_passwords | ternary("yes", "no") }}
+PermitUserEnvironment {{ sensorfleet_ssh_server_permit_user_environment | ternary("yes", "no") }}
+ChallengeResponseAuthentication {{ sensorfleet_ssh_server_challenge_response_authentication | ternary("yes", "no") }}
+PasswordAuthentication {{ sensorfleet_ssh_server_passwordauthentication | ternary("yes", "no") }}
+MaxSessions {{ sensorfleet_ssh_server_max_sessions }}
+UsePAM {{ sensorfleet_ssh_server_use_pam | ternary("yes", "no") }}
+PrintMOTD {{ sensorfleet_ssh_server_print_motd | ternary("yes", "no") }}
+TCPKeepalive {{ sensorfleet_ssh_server_tcp_keepalive | ternary("yes", "no") }}
+UseDNS {{ sensorfleet_ssh_server_usedns | ternary("yes", "no") }}
+
+{% if sensorfleet_ssh_server_allow_users %}
+{% for sensorfleet_ssh_server_allow_user in sensorfleet_ssh_server_allow_users %}
+AllowUsers "{{ sensorfleet_ssh_server_allow_user }}"
+{% endfor %}
+{% endif %}
+
+{% if sensorfleet_ssh_server_allow_groups %}
+{% for sensorfleet_ssh_server_allow_group in sensorfleet_ssh_server_allow_groups %}
+AllowGroups "{{ sensorfleet_ssh_server_allow_group }}"
+{% endfor %}
+{% endif %}
+
+{% if sensorfleet_ssh_server_deny_users %}
+{% for sensorfleet_ssh_server_deny_user in sensorfleet_ssh_server_deny_users %}
+DenyUsers "{{ sensorfleet_ssh_server_deny_user }}"
+{% endfor %}
+{% endif %}
+
+{% if sensorfleet_ssh_server_deny_groups %}
+{% for sensorfleet_ssh_server_deny_group in sensorfleet_ssh_server_deny_groups %}
+DenyGroups "{{ sensorfleet_ssh_server_deny_group }}"
+{% endfor %}
+{% endif %}
+
+{% if sensorfleet_ssh_server_ciphers %}
+Ciphers {{ sensorfleet_ssh_server_ciphers | join(',') }}
+{% endif %}
+
+{% if sensorfleet_ssh_server_macs %}
+MACs {{ sensorfleet_ssh_server_macs | join(',') }}
+{% endif %}
+
+{% if sensorfleet_ssh_server_kexalgorithms %}
+KexAlgorithms {{ sensorfleet_ssh_server_kexalgorithms | join(',') }}
+{% endif %}
+
+{% if sensorfleet_ssh_server_enable_sftp_subsystem %}
+Subsystem       sftp    /usr/lib/openssh/sftp-server
+{% endif %}
+
+{% if sensorfleet_ssh_server_additional_configs %}
+{% for addt_key, addt_value in sensorfleet_ssh_server_additional_configs.items() %}
+{{ addt_key }} {{ addt_value }}
+{% endfor %}
+{% endif %}

@@ -1,0 +1,13 @@
+---
+- name: Install license file
+  ansible.builtin.copy:
+    content: "{{ sensorfleet_license_base64 | b64decode }}"
+    dest: /etc/sensorfleet/license.json
+    owner: root
+    group: root
+    mode: "0644"
+  when: sensorfleet_license_base64 is not none
+  notify: Restart UI service
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

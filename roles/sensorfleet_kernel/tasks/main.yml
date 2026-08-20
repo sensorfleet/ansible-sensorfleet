@@ -1,0 +1,38 @@
+---
+- name: Install linux-fleet package
+  ansible.builtin.apt:
+    name: linux-fleet
+    state: present
+    install_recommends: false
+  register: sensorfleet_kernel_linux_fleet_result
+  until: sensorfleet_kernel_linux_fleet_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+
+- name: Install linux-fleet-grsec package
+  ansible.builtin.apt:
+    name: linux-fleet-grsec
+    state: present
+    install_recommends: false
+  register: sensorfleet_kernel_linux_fleet_grsec_result
+  until: sensorfleet_kernel_linux_fleet_grsec_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+  when: sensorfleet_globals_use_grsec_kernel
+
+- name: Check if /etc/sensorfleet/kernel.commandline exists
+  ansible.builtin.stat:
+    path: /etc/sensorfleet/kernel.commandline
+  register: sensorfleet_kernel_commandline_stat
+
+- name: Include EFI kernel configuration tasks
+  ansible.builtin.include_tasks: efi_kernel_config.yml
+  when: sensorfleet_kernel_commandline_stat.stat.exists
+
+- name: Disable kernel modules
+  ansible.builtin.template:
+    src: sensorfleet_disable_modules.conf.j2
+    dest: /etc/modprobe.d/sensorfleet_disable_modules.conf
+    owner: root
+    group: root
+    mode: "0644"

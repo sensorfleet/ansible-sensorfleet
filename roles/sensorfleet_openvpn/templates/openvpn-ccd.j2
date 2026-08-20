@@ -1,0 +1,10 @@
+ifconfig-push {{ sensorfleet_openvpn_client_ip }} 169.254.255.255
+{% if sensorfleet_openvpn_push_routes_v4 %}
+{% for route in sensorfleet_openvpn_push_routes_v4 %}
+{% if 'ipaddr' is filter %}
+push "route {{ route | ipaddr('network') }} {{ route | ipaddr('netmask') }}"
+{% else %}
+push "route {{ route | ansible.utils.ipaddr('network') }} {{ route | ansible.utils.ipaddr('netmask') }}"
+{% endif %}
+{% endfor %}
+{% endif %}

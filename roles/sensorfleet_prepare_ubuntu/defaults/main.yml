@@ -1,0 +1,36 @@
+---
+sensorfleet_prepare_ubuntu_packages:
+  - linux-firmware
+  - openssh-server
+  - auditd
+  - audispd-plugins
+  - apparmor
+  - apparmor-utils
+  - apparmor-profiles-extra
+  - man-db
+  - lvm2
+  - logrotate
+  - nano
+  - vim
+  - sudo
+  - netplan.io
+  - iputils-ping
+  - iproute2
+  - python3-apt
+  - openvpn
+
+sensorfleet_prepare_ubuntu_purge_packages:
+  - ubuntu-minimal
+  - ubuntu-standard
+  - ubuntu-server
+  - ubuntu-server-minimal
+  - cron
+  - rsyslog
+  - policykit-1
+
+sensorfleet_prepare_ubuntu_force: false
+
+sensorfleet_prepare_ubuntu_keep_packages_with_prefix:
+  - cryptsetup
+
+sensorfleet_prepare_ubuntu_bootstrapping: true

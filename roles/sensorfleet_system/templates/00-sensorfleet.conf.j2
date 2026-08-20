@@ -1,0 +1,4 @@
+# Managed by Ansible - do not edit manually, changes will be overwritten
+[Journal]
+Storage={{ sensorfleet_system_journald_storage }}
+Compress={{ sensorfleet_system_journald_compress | ternary('yes', 'no') }}

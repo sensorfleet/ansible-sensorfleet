@@ -1,0 +1,32 @@
+---
+- name: Set direct apt repositories
+  ansible.builtin.command: >-
+    fleet repository set
+    --release {{ sensorfleet_repos_apt_release }}
+    --fleet-repository {{ sensorfleet_repos_repository_fleet }}
+    --os-repository {{ sensorfleet_repos_repository_os }}
+    --os-codename {{ sensorfleet_repos_os_release }}
+  register: sensorfleet_repos_direct_result
+  changed_when: sensorfleet_repos_direct_result.stdout | trim | length > 0
+  notify: Update apt cache
+
+- name: Install apt authentication configuration for direct repositories
+  ansible.builtin.template:
+    src: apt-auth.conf.j2
+    dest: /etc/apt/auth.conf.d/sensorfleet.conf
+    owner: root
+    group: root
+    mode: "0600"
+  when:
+    - sensorfleet_repos_repository_login is not none
+    - sensorfleet_repos_repository_password is not none
+  notify: Update apt cache
+
+- name: Remove apt authentication configuration for direct repositories
+  ansible.builtin.file:
+    path: /etc/apt/auth.conf.d/sensorfleet.conf
+    state: absent
+  when: >-
+    sensorfleet_repos_repository_login is none or
+    sensorfleet_repos_repository_password is none
+  notify: Update apt cache

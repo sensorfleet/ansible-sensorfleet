@@ -1,0 +1,33 @@
+# Managed by ansible
+
+domain (ip) {
+    table filter {
+        chain INPUT {
+            interface tun-mgmt {
+                proto icmp ACCEPT;
+            }
+        }
+        chain OUTPUT {
+            outerface tun-mgmt {
+                proto icmp ACCEPT;
+            }
+        }
+    }
+}
+
+domain (ip ip6) {
+    table filter {
+        chain INPUT {
+            interface tun-mgmt {
+                proto tcp dport ssh ACCEPT;
+                proto tcp dport 41337 ACCEPT;
+                proto tcp dport 51337 ACCEPT;
+            }
+        }
+        chain OUTPUT {
+            outerface tun-mgmt {
+                proto tcp dport 51337 ACCEPT;
+            }
+        }
+    }
+}

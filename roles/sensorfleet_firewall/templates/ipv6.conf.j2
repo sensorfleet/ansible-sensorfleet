@@ -1,0 +1,30 @@
+# Managed by ansible
+
+domain (ip6) {
+    table filter {
+        chain INPUT {
+{% if sensorfleet_firewall_ipv6_enable %}
+            # ND-NS / ND-NA: neighbor discovery, both directions needed for resolution and DAD
+            proto icmpv6 icmpv6-type (135 136) ACCEPT;
+            # MLD: multicast listener query received from routers
+            proto icmpv6 icmpv6-type (130) ACCEPT;
+{% if sensorfleet_firewall_ipv6_autoconfig %}
+            # ND-RA: router advertisements received from routers
+            proto icmpv6 icmpv6-type (134) ACCEPT;
+{% endif %}
+{% endif %}
+        }
+        chain OUTPUT {
+{% if sensorfleet_firewall_ipv6_enable %}
+            # ND-NS / ND-NA: neighbor discovery, both directions needed for resolution and DAD
+            proto icmpv6 icmpv6-type (135 136) ACCEPT;
+            # MLD: multicast listener report/done sent to routers
+            proto icmpv6 icmpv6-type (131 132 143) ACCEPT;
+{% if sensorfleet_firewall_ipv6_autoconfig %}
+            # ND-RS: router solicitation sent to discover routers
+            proto icmpv6 icmpv6-type (133) ACCEPT;
+{% endif %}
+{% endif %}
+        }
+    }
+}

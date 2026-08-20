@@ -1,0 +1,38 @@
+---
+- name: Manage initial admin account
+  when: sensorfleet_usermgmt_create_initial_admin_account
+  block:
+    - name: Ensure credentials directory exists
+      ansible.builtin.file:
+        path: "{{ inventory_dir }}/{{ sensorfleet_usermgmt_credential_dir }}"
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      become: false
+
+    - name: Set admin account password fact
+      ansible.builtin.set_fact:
+        sensorfleet_usermgmt_admin_password: >-
+          {{ sensorfleet_usermgmt_default_password
+             if sensorfleet_usermgmt_default_password is not none
+             else lookup('ansible.builtin.password',
+                          inventory_dir ~ '/' ~ sensorfleet_usermgmt_credential_dir ~ '/ui:' ~ sensorfleet_usermgmt_default_username,
+                          length=16, chars=['ascii_letters']) }}
+
+    - name: Check current fleet user list
+      ansible.builtin.command: fleet user list
+      register: sensorfleet_usermgmt_user_list
+      changed_when: false
+      check_mode: false
+
+    - name: Create initial admin account
+      ansible.builtin.command: >-
+        fleet user add {{ sensorfleet_usermgmt_default_username }}
+        --admin
+        --password-file -
+        {{ '--force-password-change' if sensorfleet_usermgmt_ui_force_password_change else '' }}
+      args:
+        stdin: "{{ sensorfleet_usermgmt_admin_password }}"
+      when: (sensorfleet_usermgmt_user_list.stdout | from_yaml) | length == 0
+      changed_when: true
+      no_log: true

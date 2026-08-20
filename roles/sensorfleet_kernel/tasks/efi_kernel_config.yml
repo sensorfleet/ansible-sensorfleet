@@ -1,0 +1,28 @@
+---
+- name: Ensure audit=1 is present in kernel command line
+  ansible.builtin.lineinfile:
+    path: /etc/sensorfleet/kernel.commandline
+    regexp: '^audit='
+    line: "audit=1"
+  when: sensorfleet_globals_enable_auditd
+
+- name: Ensure audit_backlog_limit is present in kernel command line
+  ansible.builtin.lineinfile:
+    path: /etc/sensorfleet/kernel.commandline
+    regexp: '^audit_backlog_limit='
+    line: "audit_backlog_limit={{ sensorfleet_kernel_audit_backlog_limit }}"
+  when: sensorfleet_globals_enable_auditd
+
+- name: Remove audit=1 from kernel command line
+  ansible.builtin.lineinfile:
+    path: /etc/sensorfleet/kernel.commandline
+    regexp: '^audit='
+    state: absent
+  when: not sensorfleet_globals_enable_auditd
+
+- name: Remove audit_backlog_limit from kernel command line
+  ansible.builtin.lineinfile:
+    path: /etc/sensorfleet/kernel.commandline
+    regexp: '^audit_backlog_limit='
+    state: absent
+  when: not sensorfleet_globals_enable_auditd

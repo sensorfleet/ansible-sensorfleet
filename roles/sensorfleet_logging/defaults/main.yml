@@ -1,0 +1,20 @@
+---
+
+sensorfleet_logging_loghost_host: null
+sensorfleet_logging_loghost_port: 514
+sensorfleet_logging_loghost_transport: null
+sensorfleet_logging_loghost_syslogprotocol_flag: false
+sensorfleet_logging_loghost_tls_key: null
+sensorfleet_logging_loghost_tls_cert: null
+sensorfleet_logging_loghost_tls_ca: null
+sensorfleet_logging_loghost_tls_verify: true
+sensorfleet_logging_loghost_tls_ssloptions: null
+sensorfleet_logging_loghost_tls_ca_additional: []
+sensorfleet_logging_loghost_enable_disk_buffer: false
+sensorfleet_logging_loghost_disk_buffer_size: 1073741824
+sensorfleet_logging_loghost_disk_buffer_reliable: false
+sensorfleet_logging_loghost_disk_buffer_membuf_size: 163840000
+sensorfleet_logging_loghost_disk_buffer_membuf_length: 10000
+
+sensorfleet_logging_enable_component_audit: true
+sensorfleet_logging_enable_instrument_audit: true

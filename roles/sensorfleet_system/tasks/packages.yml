@@ -1,0 +1,83 @@
+---
+- name: Install AMD microcode
+  ansible.builtin.apt:
+    name: amd64-microcode
+    state: present
+    install_recommends: false
+  when:
+    - ansible_facts['virtualization_role'] != 'guest'
+    - "'AuthenticAMD' in ansible_facts['processor']"
+  register: sensorfleet_system_amd_microcode_result
+  until: sensorfleet_system_amd_microcode_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+
+- name: Install Intel microcode
+  ansible.builtin.apt:
+    name: intel-microcode
+    state: present
+    install_recommends: false
+  when:
+    - ansible_facts['virtualization_role'] != 'guest'
+    - "'GenuineIntel' in ansible_facts['processor']"
+  register: sensorfleet_system_intel_microcode_result
+  until: sensorfleet_system_intel_microcode_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+
+- name: Install extra packages
+  ansible.builtin.apt:
+    name: "{{ sensorfleet_system_extra_packages }}"
+    state: present
+    install_recommends: false
+  when: sensorfleet_system_extra_packages | length > 0
+  register: sensorfleet_system_extra_packages_result
+  until: sensorfleet_system_extra_packages_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+
+- name: Install auditd packages
+  ansible.builtin.apt:
+    name:
+      - auditd
+      - audispd-plugins
+    state: present
+    install_recommends: false
+  register: sensorfleet_system_auditd_packages_result
+  until: sensorfleet_system_auditd_packages_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+
+- name: Enable and start auditd
+  ansible.builtin.systemd:
+    name: auditd
+    enabled: true
+    state: started
+  when: sensorfleet_globals_enable_auditd
+
+- name: Disable and stop auditd
+  ansible.builtin.systemd:
+    name: auditd
+    enabled: false
+    state: stopped
+  when: not sensorfleet_globals_enable_auditd
+
+- name: Configure root command logging in auditd
+  ansible.builtin.copy:
+    dest: /etc/audit/rules.d/sensorfleet_root_command_logging.rules
+    content: |
+      # Managed by Ansible - do not edit manually, changes will be overwritten
+      -a always,exit -F arch=b64 -F euid=0 -S execve -k rootcmd
+      -a always,exit -F arch=b32 -F euid=0 -S execve -k rootcmd
+    owner: root
+    group: root
+    mode: "0640"
+  when: sensorfleet_system_enable_root_command_logging
+  notify: Reload auditd rules
+
+- name: Remove root command logging configuration from auditd
+  ansible.builtin.file:
+    path: /etc/audit/rules.d/sensorfleet_root_command_logging.rules
+    state: absent
+  when: not sensorfleet_system_enable_root_command_logging
+  notify: Reload auditd rules

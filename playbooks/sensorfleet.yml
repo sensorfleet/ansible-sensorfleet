@@ -1,0 +1,44 @@
+---
+- name: Set up SensorFleet hosts
+  hosts: fleetmgmt:sensors
+  roles:
+    - role: sensorfleet_globals
+      tags: [always]
+    - role: sensorfleet_sanity_checks
+      tags: [always]
+    - role: sensorfleet_mounts
+      tags: []
+    - role: sensorfleet_internal_certificates
+      tags: []
+    - role: sensorfleet_openvpn
+      tags: []
+    - role: sensorfleet_system_cacerts
+      tags: []
+    - role: sensorfleet_repos
+      tags: []
+    - role: sensorfleet_services_ntp
+      tags: []
+    - role: sensorfleet_kernel
+      tags: []
+    - role: sensorfleet_sysctl
+      tags: []
+    - role: sensorfleet_system
+      tags: []
+    - role: sensorfleet_logging
+      tags: []
+    - role: sensorfleet_ssh
+      tags: []
+    - role: sensorfleet_nginx
+      tags: []
+    - role: sensorfleet_fleetgram
+      tags: [fleetgram]
+    - role: sensorfleet_firewall
+      tags: []
+    - role: sensorfleet_config
+      tags: [devel]
+    - role: sensorfleet_usermgmt
+      tags: [usermgmt]
+    - role: sensorfleet_license
+      tags: [devel]
+    - role: sensorfleet_instruments
+      tags: [devel]

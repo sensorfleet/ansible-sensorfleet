@@ -1,0 +1,31 @@
+---
+- name: Ensure /etc/sensorfleet/openvpn directory exists
+  ansible.builtin.file:
+    path: /etc/sensorfleet/openvpn
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Harden /etc/openvpn directory permissions
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: openvpn
+    mode: "0750"
+  loop:
+    - /etc/openvpn
+    - /etc/openvpn/server
+    - /etc/openvpn/client
+
+- name: Include fleet management OpenVPN tasks
+  ansible.builtin.include_tasks: fm.yml
+  when: "'fleetmgmt' in group_names"
+
+- name: Include sensor OpenVPN tasks
+  ansible.builtin.include_tasks: sensor.yml
+  when: "'fleetmgmt' not in group_names"
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

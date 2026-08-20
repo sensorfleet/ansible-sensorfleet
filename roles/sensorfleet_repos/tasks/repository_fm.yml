@@ -1,0 +1,21 @@
+---
+- name: Enable FM apt repository proxy
+  ansible.builtin.command: >-
+    fleet repository enable-proxy
+    --os-upstream {{ sensorfleet_repos_repository_os }}
+    --fleet-upstream {{ sensorfleet_repos_repository_fleet }}
+    --upstream-credentials -
+  args:
+    stdin: "{{ sensorfleet_repos_repository_login }}:{{ sensorfleet_repos_repository_password }}"
+  register: sensorfleet_repos_fm_proxy_result
+  changed_when: sensorfleet_repos_fm_proxy_result.stdout | trim | length > 0
+  when: "'fleetmgmt' in group_names"
+  notify: Update apt cache
+
+- name: Set apt release
+  ansible.builtin.command: >-
+    fleet repository set
+    --release {{ sensorfleet_repos_apt_release }}
+  register: sensorfleet_repos_fm_set_result
+  changed_when: sensorfleet_repos_fm_set_result.stdout | trim | length > 0
+  notify: Update apt cache

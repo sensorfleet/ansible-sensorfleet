@@ -1,0 +1,13 @@
+---
+sensorfleet_services_ntp_pools:
+  - host: "ntp.ubuntu.com"
+    options: "iburst maxsources 4"
+  - host: "0.ubuntu.pool.ntp.org"
+    options: "iburst maxsources 1"
+  - host: "1.ubuntu.pool.ntp.org"
+    options: "iburst maxsources 1"
+  - host: "2.ubuntu.pool.ntp.org"
+    options: "iburst maxsources 2"
+
+sensorfleet_services_ntp_servers: []
+sensorfleet_services_ntp_maxdistance: 5

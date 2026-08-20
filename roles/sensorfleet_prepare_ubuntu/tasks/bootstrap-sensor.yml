@@ -1,0 +1,70 @@
+---
+- name: Create temporary download directory on FM
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: sensorfleet-bootstrap
+  register: sensorfleet_prepare_ubuntu_fm_tempdir
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Download sensorfleet packages on FM
+  ansible.builtin.command: apt download sensorfleet-fleet-tool sensorfleet-fleetcert
+  args:
+    chdir: "{{ sensorfleet_prepare_ubuntu_fm_tempdir.path }}"
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+  changed_when: true
+
+- name: Find downloaded packages on FM
+  ansible.builtin.find:
+    paths: "{{ sensorfleet_prepare_ubuntu_fm_tempdir.path }}"
+    patterns: "*.deb"
+  register: sensorfleet_prepare_ubuntu_fm_downloaded_debs
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Cache downloaded packages locally
+  ansible.builtin.fetch:
+    src: "{{ item.path }}"
+    dest: "{{ inventory_dir }}/files/bootstrap/{{ item.path | basename }}"
+    flat: true
+  loop: "{{ sensorfleet_prepare_ubuntu_fm_downloaded_debs.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Remove temporary download directory on FM
+  ansible.builtin.file:
+    path: "{{ sensorfleet_prepare_ubuntu_fm_tempdir.path }}"
+    state: absent
+  delegate_to: "{{ groups['fleetmgmt'][0] }}"
+
+- name: Create temporary package directory on sensor
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: sensorfleet-bootstrap
+  register: sensorfleet_prepare_ubuntu_sensor_tempdir
+
+- name: Push cached packages to sensor
+  ansible.builtin.copy:
+    src: "{{ inventory_dir }}/files/bootstrap/{{ item.path | basename }}"
+    dest: "{{ sensorfleet_prepare_ubuntu_sensor_tempdir.path }}/{{ item.path | basename }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ sensorfleet_prepare_ubuntu_fm_downloaded_debs.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+
+- name: Install sensorfleet packages on sensor
+  ansible.builtin.apt:
+    deb: "{{ sensorfleet_prepare_ubuntu_sensor_tempdir.path }}/{{ item.path | basename }}"
+  loop: "{{ sensorfleet_prepare_ubuntu_fm_downloaded_debs.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  register: sensorfleet_prepare_ubuntu_sensor_deb_result
+  until: sensorfleet_prepare_ubuntu_sensor_deb_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+
+- name: Remove temporary package directory on sensor
+  ansible.builtin.file:
+    path: "{{ sensorfleet_prepare_ubuntu_sensor_tempdir.path }}"
+    state: absent

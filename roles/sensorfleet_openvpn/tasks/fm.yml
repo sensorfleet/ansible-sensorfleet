@@ -1,0 +1,89 @@
+---
+- name: Check current openvpn-server@sensors service state
+  ansible.builtin.systemd:
+    name: openvpn-server@sensors
+  register: sensorfleet_openvpn_server_service_state
+  failed_when: false
+  changed_when: false
+
+- name: Determine if openvpn-server@sensors was already active
+  ansible.builtin.set_fact:
+    sensorfleet_openvpn_server_was_active: >-
+      {{ (sensorfleet_openvpn_server_service_state.status is defined) and
+         (sensorfleet_openvpn_server_service_state.status.ActiveState | default('inactive') == 'active') }}
+
+- name: Ensure VPN server CSR exists
+  ansible.builtin.command: >-
+    fleetcert vpnserver
+    --key /etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.key
+    csr /etc/sensorfleet/csr/{{ inventory_hostname_short }}.openvpn.csr
+  args:
+    creates: "/etc/sensorfleet/csr/{{ inventory_hostname_short }}.openvpn.csr"
+  notify: restart openvpn
+
+- name: Include certificate signing tasks
+  ansible.builtin.include_tasks: certificate_sign_local.yml
+
+- name: Ensure OpenVPN CCD directory exists
+  ansible.builtin.file:
+    path: /etc/openvpn/server/ccd
+    state: directory
+    owner: root
+    group: openvpn
+    mode: "0750"
+
+- name: Create shared secret (TA-key)
+  ansible.builtin.command: openvpn --genkey --secret /etc/sensorfleet/openvpn/ta.key
+  args:
+    creates: /etc/sensorfleet/openvpn/ta.key
+
+- name: Set permissions on shared secret (TA-key)
+  ansible.builtin.file:
+    path: /etc/sensorfleet/openvpn/ta.key
+    owner: root
+    group: openvpn
+    mode: "0640"
+
+- name: Check if CA chain exists
+  ansible.builtin.stat:
+    path: /etc/sensorfleet/ca_chain.pem
+  register: sensorfleet_openvpn_cachain_file
+
+- name: Install OpenVPN server configuration
+  ansible.builtin.template:
+    src: server.conf.j2
+    dest: /etc/openvpn/server/sensors.conf
+    owner: root
+    group: openvpn
+    mode: "0640"
+  notify: restart openvpn
+
+- name: Ensure systemd override directory exists for openvpn-server
+  ansible.builtin.file:
+    path: /etc/systemd/system/openvpn-server@.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install systemd override for openvpn-server
+  ansible.builtin.copy:
+    src: systemd-override-server.conf
+    dest: /etc/systemd/system/openvpn-server@.service.d/override.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Set permissions on OpenVPN server private key
+  ansible.builtin.file:
+    path: "/etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.key"
+    owner: root
+    group: openvpn
+    mode: "0640"
+
+- name: Enable and start openvpn-server@sensors service
+  ansible.builtin.systemd:
+    name: openvpn-server@sensors
+    enabled: true
+    state: started
+    daemon_reload: true

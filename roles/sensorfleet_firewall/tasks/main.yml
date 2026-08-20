@@ -1,0 +1,137 @@
+---
+- name: Ensure /etc/ferm/ferm.d directory exists
+  ansible.builtin.file:
+    path: /etc/ferm/ferm.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install early ferm rules fragment
+  ansible.builtin.template:
+    src: early-rules.conf.j2
+    dest: /etc/ferm/ferm.d/05-early-rules.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "ferm -n %s"
+  notify: reload firewall rules
+
+- name: Install IPv6 ferm rules fragment
+  ansible.builtin.template:
+    src: ipv6.conf.j2
+    dest: /etc/ferm/ferm.d/06-ipv6.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "ferm -n %s"
+  notify: reload firewall rules
+
+- name: Install ping ferm rules fragment
+  ansible.builtin.template:
+    src: ping.conf.j2
+    dest: /etc/ferm/ferm.d/08-ping.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "ferm -n %s"
+  notify: reload firewall rules
+
+- name: Install repository ferm rules fragment
+  ansible.builtin.template:
+    src: repository.conf.j2
+    dest: /etc/ferm/ferm.d/15-repository.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "ferm -n %s"
+  notify: reload firewall rules
+
+- name: Install OpenVPN ferm rules fragment
+  ansible.builtin.template:
+    src: openvpn.conf.j2
+    dest: /etc/ferm/ferm.d/20-openvpn.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "ferm -n %s"
+  notify: reload firewall rules
+
+- name: Install internal communication ferm rules fragment (FM)
+  ansible.builtin.template:
+    src: internal-fm.conf.j2
+    dest: /etc/ferm/ferm.d/10-internal-communication.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "ferm -n %s"
+  when: "'fleetmgmt' in group_names"
+  notify: reload firewall rules
+
+- name: Install internal communication ferm rules fragment (sensor)
+  ansible.builtin.template:
+    src: internal-sensor.conf.j2
+    dest: /etc/ferm/ferm.d/10-internal-communication.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "ferm -n %s"
+  when: "'fleetmgmt' not in group_names"
+  notify: reload firewall rules
+
+- name: Install late ferm rules fragment
+  ansible.builtin.template:
+    src: late-rules.conf.j2
+    dest: /etc/ferm/ferm.d/95-late-rules.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "ferm -n %s"
+  notify: reload firewall rules
+
+- name: Install custom ferm rules fragment
+  ansible.builtin.template:
+    src: custom-rules.conf.j2
+    dest: /etc/ferm/ferm.d/90-custom-rules.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "ferm -n %s"
+  notify: reload firewall rules
+
+- name: Find files in ferm.d directory
+  ansible.builtin.find:
+    paths: /etc/ferm/ferm.d
+    patterns: "*.conf"
+  register: sensorfleet_firewall_ferm_d_files
+  when: sensorfleet_firewall_remove_alien_dropins
+
+- name: Remove alien ferm.d dropins
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ sensorfleet_firewall_ferm_d_files.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when:
+    - sensorfleet_firewall_remove_alien_dropins
+    - >-
+      item.path | basename not in [
+        '05-early-rules.conf', '06-ipv6.conf', '08-ping.conf', '15-repository.conf',
+        '20-openvpn.conf', '10-internal-communication.conf', '95-late-rules.conf',
+        '90-custom-rules.conf'
+      ]
+  notify: reload firewall rules
+
+- name: Install ferm configuration
+  ansible.builtin.template:
+    src: ferm.conf.j2
+    dest: /etc/ferm/ferm.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "ferm -n %s"
+  notify: reload firewall rules
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

@@ -1,0 +1,13 @@
+---
+- name: Set sysctl values
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+  loop: >-
+    {{ (sensorfleet_sysctl_defaults
+        | combine(sensorfleet_sysctl_grsec_defaults if sensorfleet_globals_use_grsec_kernel else {})
+        | combine(sensorfleet_sysctl_overrides))
+       | dict2items }}
+  loop_control:
+    label: "{{ item.key }}"
+  failed_when: false

@@ -1,0 +1,70 @@
+domain (ip) {
+    table filter {
+        chain INPUT {
+            # silently drop IGMP messages, no need to log this noise (IPv4-only, no ip6 equivalent)
+            proto igmp DROP;
+        }
+    }
+}
+
+domain (ip6) {
+    table filter {
+        chain INPUT {
+            # silently drop unrecognized traffic to the all-nodes multicast group
+            daddr ff02::1 DROP;
+        }
+    }
+}
+
+{% if 'fleetmgmt' in group_names %}
+domain (ip ip6) {
+    table filter {
+        chain INPUT {
+            # allow NTP requests from sensors over the sensor tunnel
+            interface tun-sensors {
+                proto udp dport 123 ACCEPT;
+            }
+        }
+    }
+}
+{% else %}
+domain (ip) {
+    table filter {
+        chain OUTPUT {
+            # allow systemd-timesyncd to reach the FM's NTP service over the sensor tunnel
+            mod owner uid-owner systemd-timesync daddr 169.254.255.255 proto udp dport 123 ACCEPT;
+        }
+    }
+}
+{% endif %}
+
+domain (ip ip6) {
+    table filter {
+        chain INPUT {
+            interface lo ACCEPT;
+            # silently drop broadcast frames, no need to log this noise
+            mod pkttype pkt-type broadcast DROP;
+            LOG log-prefix "fw-input-drop: ";
+            DROP;
+        }
+        chain OUTPUT {
+            outerface lo ACCEPT;
+            # systemd-resolved making upstream DNS queries to any destination
+            mod owner uid-owner systemd-resolve proto (tcp udp) dport 53 ACCEPT;
+{% if 'fleetmgmt' in group_names %}
+            mod owner uid-owner _chrony proto udp dport 123 ACCEPT;
+{% endif %}
+{% if sensorfleet_firewall_enforce_egress_policy %}
+            LOG log-uid log-prefix "fw-output-drop: ";
+            DROP;
+{% else %}
+            LOG log-uid log-prefix "fw-output-unknown-accept: ";
+            ACCEPT;
+{% endif %}
+        }
+        chain FORWARD {
+            LOG log-prefix "fw-forward-drop: ";
+            DROP;
+        }
+    }
+}

@@ -1,0 +1,36 @@
+---
+- name: Install sensorfleet-fm package
+  ansible.builtin.apt:
+    name: sensorfleet-fm
+    state: present
+    update_cache: true
+    cache_valid_time: 300
+    install_recommends: false
+  when: "'fleetmgmt' in group_names"
+  register: sensorfleet_prepare_role_fm_result
+  until: sensorfleet_prepare_role_fm_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+
+- name: Install sensorfleet-sensor package
+  ansible.builtin.apt:
+    name: sensorfleet-sensor
+    state: present
+    update_cache: true
+    cache_valid_time: 300
+    install_recommends: false
+  when: "'fleetmgmt' not in group_names"
+  register: sensorfleet_prepare_role_sensor_result
+  until: sensorfleet_prepare_role_sensor_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+
+- name: Reboot the machine  # noqa: no-handler (intentionally immediate, gated on the package install results)
+  ansible.builtin.reboot:
+  when: sensorfleet_prepare_role_fm_result is changed or sensorfleet_prepare_role_sensor_result is changed
+
+- name: Remove apt authentication configuration for direct repositories
+  ansible.builtin.file:
+    path: /etc/apt/auth.conf.d/sensorfleet.conf
+    state: absent
+  when: "'fleetmgmt' in group_names"

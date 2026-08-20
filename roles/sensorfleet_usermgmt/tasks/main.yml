@@ -1,0 +1,4 @@
+---
+- name: Include fleet management user tasks
+  ansible.builtin.include_tasks: fm.yml
+  when: "'fleetmgmt' in group_names"

@@ -1,0 +1,6 @@
+---
+- name: Reboot SensorFleet hosts
+  hosts: fleetmgmt:sensors
+  tasks:
+    - name: Reboot host
+      ansible.builtin.reboot:

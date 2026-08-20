@@ -1,0 +1,11 @@
+---
+sensorfleet_system_root_password: null
+sensorfleet_system_extra_packages: []
+sensorfleet_system_disable_allow_auth_import: true
+sensorfleet_system_disable_allow_adoption_import: true
+sensorfleet_system_enable_root_command_logging: true
+sensorfleet_system_shell_session_timeout: null
+sensorfleet_system_sudo_logfile: null
+sensorfleet_system_journald_storage: persistent
+sensorfleet_system_journald_compress: true
+sensorfleet_system_journald_cleanup_unmanaged_files: true

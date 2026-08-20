@@ -1,0 +1,11 @@
+---
+sensorfleet_kernel_audit_backlog_limit: 8192
+
+sensorfleet_kernel_disabled_modules:
+  - tipc
+  - rds
+  - cramfs
+  - udf
+  - sctp
+  - dccp
+sensorfleet_kernel_disable_usb_storage: false

@@ -1,0 +1,11 @@
+---
+
+sensorfleet_openvpn_server_host: "{{ groups['fleetmgmt'][0] }}"
+
+sensorfleet_openvpn_tls_cipher: TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
+sensorfleet_openvpn_cipher: AES-256-CBC
+sensorfleet_openvpn_dhparams: null
+sensorfleet_openvpn_crl_verify: null
+sensorfleet_openvpn_require_key_usage_in_certificate: true
+
+sensorfleet_openvpn_push_routes_v4: []

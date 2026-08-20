@@ -1,0 +1,15 @@
+---
+- name: Set up SensorFleet hosts
+  hosts: fleetmgmt:sensors
+  roles:
+    - role: sensorfleet_globals
+      tags: [always]
+    - role: sensorfleet_sanity_checks
+      tags: [always]
+    - role: sensorfleet_prepare_ubuntu
+    - role: sensorfleet_mounts
+    - role: sensorfleet_internal_certificates
+    - role: sensorfleet_openvpn
+    - role: sensorfleet_repos
+      when: "'fleetmgmt' not in group_names"
+    - role: sensorfleet_prepare_role

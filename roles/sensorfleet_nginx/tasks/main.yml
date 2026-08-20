@@ -1,0 +1,75 @@
+---
+- name: Install nginx vhost SSL certificate
+  ansible.builtin.copy:
+    dest: "{{ sensorfleet_nginx_sensorui_vhost_ssl_cert_path }}"
+    content: "{{ sensorfleet_nginx_sensorui_vhost_ssl_cert }}"
+    owner: root
+    group: www-data
+    mode: "0640"
+  when: sensorfleet_nginx_sensorui_vhost_ssl_cert
+  notify: Reload nginx
+
+- name: Install nginx vhost SSL key
+  ansible.builtin.copy:
+    dest: "{{ sensorfleet_nginx_sensorui_vhost_ssl_key_path }}"
+    content: "{{ sensorfleet_nginx_sensorui_vhost_ssl_key }}"
+    owner: root
+    group: www-data
+    mode: "0640"
+  when: sensorfleet_nginx_sensorui_vhost_ssl_key
+  notify: Reload nginx
+
+- name: Install nginx vhost SSL DH parameters
+  ansible.builtin.copy:
+    dest: "{{ sensorfleet_nginx_sensorui_vhost_ssl_dhparams_path }}"
+    content: "{{ sensorfleet_nginx_sensorui_vhost_ssl_dhparams }}"
+    owner: root
+    group: root
+    mode: "0640"
+  when: sensorfleet_nginx_sensorui_vhost_ssl_dhparams
+  notify: Reload nginx
+
+- name: Install nginx UI vhost SSL options
+  ansible.builtin.template:
+    src: nginx_ui_vhost_ssloptions.conf.j2
+    dest: /etc/nginx/sensor-ui.d/00-nginx-ui-vhost-ssloptions.conf
+    owner: root
+    group: root
+    mode: "0640"
+  notify: Reload nginx
+
+- name: Disable fleetcert FM-CA webui certificate renewal
+  ansible.builtin.command: fleetcert webui renew --disable
+  register: sensorfleet_nginx_webui_renew_disable
+  changed_when: sensorfleet_nginx_webui_renew_disable.stderr_lines | length > 0
+  failed_when: false
+  when: >-
+    sensorfleet_nginx_sensorui_vhost_ssl_cert or
+    sensorfleet_nginx_sensorui_vhost_ssl_key
+
+- name: Create nginx UI certificate symlink
+  ansible.builtin.file:
+    src: "{{ sensorfleet_nginx_sensorui_vhost_ssl_cert_path }}"
+    dest: /etc/ssl/sensorfleet/ui.crt
+    state: link
+  notify: Reload nginx
+
+- name: Create nginx UI key symlink
+  ansible.builtin.file:
+    src: "{{ sensorfleet_nginx_sensorui_vhost_ssl_key_path }}"
+    dest: /etc/ssl/sensorfleet/ui.key
+    state: link
+  notify: Reload nginx
+
+- name: Install nginx configuration
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "nginx -t -c %s"
+  notify: Reload nginx
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

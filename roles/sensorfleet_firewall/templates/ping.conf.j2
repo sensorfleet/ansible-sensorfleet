@@ -1,0 +1,29 @@
+domain (ip) {
+    table filter {
+        chain INPUT {
+{% if sensorfleet_firewall_allow_ingress_icmp4 %}
+            proto icmp icmp-type echo-request ACCEPT;
+{% endif %}
+        }
+        chain OUTPUT {
+{% if sensorfleet_firewall_allow_egress_icmp4 %}
+            proto icmp icmp-type echo-request ACCEPT;
+{% endif %}
+        }
+    }
+}
+
+domain (ip6) {
+    table filter {
+        chain INPUT {
+{% if sensorfleet_firewall_ipv6_enable and sensorfleet_firewall_allow_ingress_icmp6 %}
+            proto icmpv6 icmpv6-type echo-request ACCEPT;
+{% endif %}
+        }
+        chain OUTPUT {
+{% if sensorfleet_firewall_ipv6_enable and sensorfleet_firewall_allow_egress_icmp6 %}
+            proto icmpv6 icmpv6-type echo-request ACCEPT;
+{% endif %}
+        }
+    }
+}

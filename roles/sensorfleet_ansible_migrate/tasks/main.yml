@@ -1,0 +1,102 @@
+---
+- name: Ensure /etc/sensorfleet/openvpn directory exists
+  ansible.builtin.file:
+    path: /etc/sensorfleet/openvpn
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Copy ta.key to /etc/sensorfleet/openvpn
+  ansible.builtin.copy:
+    src: /etc/sensorfleet/ta.key
+    dest: /etc/sensorfleet/openvpn/ta.key
+    remote_src: true
+    owner: root
+    group: openvpn
+    mode: "0640"
+
+- name: Ensure /etc/sensorfleet/csr directory exists
+  ansible.builtin.file:
+    path: /etc/sensorfleet/csr
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Copy VPN server CSR to /etc/sensorfleet/csr
+  ansible.builtin.copy:
+    src: /etc/sensorfleet/vpnserver.csr
+    dest: "/etc/sensorfleet/csr/{{ inventory_hostname_short }}.openvpn.csr"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+  when: "'fleetmgmt' in group_names"
+
+- name: Copy VPN client CSR to /etc/sensorfleet/csr
+  ansible.builtin.copy:
+    src: /etc/sensorfleet/vpnclient.csr
+    dest: "/etc/sensorfleet/csr/{{ inventory_hostname_short }}.openvpn.csr"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+  when: "'sensors' in group_names"
+
+- name: Copy VPN server certificate to /etc/sensorfleet/openvpn
+  ansible.builtin.copy:
+    src: /etc/sensorfleet/vpnserver.pem
+    dest: "/etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.crt"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+  when: "'fleetmgmt' in group_names"
+
+- name: Copy VPN server private key to /etc/sensorfleet/openvpn
+  ansible.builtin.copy:
+    src: /etc/sensorfleet/vpnserver_key.pem
+    dest: "/etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.key"
+    remote_src: true
+    owner: root
+    group: openvpn
+    mode: "0640"
+  when: "'fleetmgmt' in group_names"
+
+- name: Copy VPN client certificate to /etc/sensorfleet/openvpn
+  ansible.builtin.copy:
+    src: /etc/sensorfleet/vpnclient.pem
+    dest: "/etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.crt"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+  when: "'sensors' in group_names"
+
+- name: Copy VPN client private key to /etc/sensorfleet/openvpn
+  ansible.builtin.copy:
+    src: /etc/sensorfleet/vpnclient_key.pem
+    dest: "/etc/sensorfleet/openvpn/{{ inventory_hostname_short }}.key"
+    remote_src: true
+    owner: root
+    group: openvpn
+    mode: "0640"
+  when: "'sensors' in group_names"
+
+- name: Check if legacy apt auth.conf exists
+  ansible.builtin.stat:
+    path: /etc/apt/auth.conf
+  register: sensorfleet_ansible_migrate_apt_auth_conf_stat
+
+- name: Copy legacy apt auth.conf to auth.conf.d
+  ansible.builtin.copy:
+    src: /etc/apt/auth.conf
+    dest: /etc/apt/auth.conf.d/sensorfleet.conf
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0600"
+  when:
+    - sensorfleet_ansible_migrate_apt_auth_conf_stat.stat.exists
+    - not sensorfleet_globals_use_fm_repo_service

@@ -1,0 +1,147 @@
+---
+- name: Ensure /etc/syslog-ng/tls directory exists
+  ansible.builtin.file:
+    path: /etc/syslog-ng/tls
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Ensure /etc/syslog-ng/tls/ca.d directory exists
+  ansible.builtin.file:
+    path: /etc/syslog-ng/tls/ca.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Install loghost TLS private key
+  ansible.builtin.copy:
+    dest: /etc/syslog-ng/tls/key.pem
+    content: "{{ sensorfleet_logging_loghost_tls_key }}"
+    owner: root
+    group: root
+    mode: "0600"
+  when: sensorfleet_logging_loghost_tls_key is not none
+  notify: Reload syslog-ng
+
+- name: Install loghost TLS certificate
+  ansible.builtin.copy:
+    dest: /etc/syslog-ng/tls/cert.pem
+    content: "{{ sensorfleet_logging_loghost_tls_cert }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: sensorfleet_logging_loghost_tls_cert is not none
+  notify: Reload syslog-ng
+
+- name: Install loghost TLS CA certificate
+  ansible.builtin.copy:
+    dest: /etc/syslog-ng/tls/ca.d/ca.pem
+    content: "{{ sensorfleet_logging_loghost_tls_ca }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: sensorfleet_logging_loghost_tls_ca is not none
+  notify: Reload syslog-ng
+
+- name: Install additional loghost TLS CA certificates
+  ansible.builtin.copy:
+    dest: "/etc/syslog-ng/tls/ca.d/{{ item.name }}.pem"
+    content: "{{ item.certificate }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ sensorfleet_logging_loghost_tls_ca_additional }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: Reload syslog-ng
+
+- name: Find CA certificate files in ca.d directory
+  ansible.builtin.find:
+    paths: /etc/syslog-ng/tls/ca.d
+    patterns: "*.pem"
+  register: sensorfleet_logging_loghost_ca_d_pem_files
+
+- name: Remove unexpected CA certificate files from ca.d directory
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ sensorfleet_logging_loghost_ca_d_pem_files.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when: >-
+    (item.path | basename | regex_replace('\.pem$', ''))
+    not in (
+      (['ca'] if sensorfleet_logging_loghost_tls_ca is not none else [])
+      + (sensorfleet_logging_loghost_tls_ca_additional | map(attribute='name') | list)
+    )
+  notify: Reload syslog-ng
+
+- name: Re-scan CA certificate files in ca.d directory
+  ansible.builtin.find:
+    paths: /etc/syslog-ng/tls/ca.d
+    patterns: "*.pem"
+  register: sensorfleet_logging_loghost_ca_d_current_pem_files
+
+- name: Compute CA certificate hashes
+  ansible.builtin.command: "openssl x509 -noout -hash -in {{ item.path }}"
+  loop: "{{ sensorfleet_logging_loghost_ca_d_current_pem_files.files | sort(attribute='path') }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  register: sensorfleet_logging_loghost_ca_hashes
+  changed_when: false
+  check_mode: false
+
+- name: Reset computed CA certificate hash symlink names
+  ansible.builtin.set_fact:
+    sensorfleet_logging_loghost_ca_hash_symlinks: []
+
+- name: Compute CA certificate hash symlink names
+  ansible.builtin.set_fact:
+    sensorfleet_logging_loghost_ca_hash_symlinks: >-
+      {{ sensorfleet_logging_loghost_ca_hash_symlinks +
+         [{'src': item.item.path | basename,
+           'dest': item.stdout ~ '.' ~
+             (sensorfleet_logging_loghost_ca_hashes.results[:index]
+              | selectattr('stdout', 'equalto', item.stdout) | list | length)}] }}
+  loop: "{{ sensorfleet_logging_loghost_ca_hashes.results }}"
+  loop_control:
+    index_var: index
+    label: "{{ item.item.path | basename }}"
+
+- name: Create CA certificate hash symlinks
+  ansible.builtin.file:
+    src: "{{ item.src }}"
+    dest: "/etc/syslog-ng/tls/ca.d/{{ item.dest }}"
+    state: link
+  loop: "{{ sensorfleet_logging_loghost_ca_hash_symlinks }}"
+  loop_control:
+    label: "{{ item.src }}"
+  notify: Reload syslog-ng
+
+- name: Find CA certificate hash symlinks in ca.d directory
+  ansible.builtin.find:
+    paths: /etc/syslog-ng/tls/ca.d
+    patterns: '^[0-9a-f]{8}\.[0-9]+$'
+    use_regex: true
+  register: sensorfleet_logging_loghost_ca_d_hash_files
+
+- name: Remove stale CA certificate hash symlinks
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ sensorfleet_logging_loghost_ca_d_hash_files.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when: (item.path | basename) not in (sensorfleet_logging_loghost_ca_hash_symlinks | map(attribute='dest') | list)
+  notify: Reload syslog-ng
+
+- name: Install remote logging configuration (TLS)
+  ansible.builtin.template:
+    src: remote_logging_tls.conf.j2
+    dest: /etc/syslog-ng/conf.d/99-sensorfleet-remote-log.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload syslog-ng

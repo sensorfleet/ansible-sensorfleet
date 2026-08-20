@@ -1,0 +1,67 @@
+---
+- name: Show current fleet configuration
+  ansible.builtin.command: fleet config show
+  register: sensorfleet_instruments_show_result
+  until: sensorfleet_instruments_show_result is succeeded
+  retries: "{{ sensorfleet_globals_fleet_retries }}"
+  delay: "{{ sensorfleet_globals_fleet_retry_delay_seconds }}"
+  changed_when: false
+  check_mode: false
+
+- name: Set fleet configuration facts
+  ansible.builtin.set_fact:
+    sensorfleet_instruments_original: "{{ sensorfleet_instruments_show_result.stdout | from_yaml }}"
+    sensorfleet_instruments_new: "{{ sensorfleet_instruments_show_result.stdout | from_yaml }}"
+
+- name: Set merged instruments fact
+  ansible.builtin.set_fact:
+    sensorfleet_instruments_merged: >-
+      {{ sensorfleet_instruments_merged | default({})
+         | combine({item.key ~ '@' ~ inventory_hostname_short: item.value}) }}
+  loop: >-
+    {{ (sensorfleet_instruments_group | default({}))
+       | combine(sensorfleet_instruments_host | default({}))
+       | dict2items }}
+  loop_control:
+    label: "{{ item.key }}"
+  when: >-
+    sensorfleet_instruments_group | length > 0 or
+    sensorfleet_instruments_host | length > 0
+
+- name: Include per-instrument configuration tasks
+  ansible.builtin.include_tasks: instrument_configs.yml
+
+- name: Apply instruments override (merge)
+  ansible.builtin.set_fact:
+    sensorfleet_instruments_new: >-
+      {{ sensorfleet_instruments_new
+         | combine({'config': {'instruments': sensorfleet_instruments_merged}}, recursive=True) }}
+  when: >-
+    (sensorfleet_instruments_group | length > 0 or sensorfleet_instruments_host | length > 0)
+    and not sensorfleet_instruments_replace_configuration
+
+- name: Apply instruments override (replace)
+  ansible.builtin.set_fact:
+    sensorfleet_instruments_new: >-
+      {{ sensorfleet_instruments_new
+         | combine({'config': sensorfleet_instruments_new.config
+                     | combine({'instruments': sensorfleet_instruments_merged})}) }}
+  when: >-
+    (sensorfleet_instruments_group | length > 0 or sensorfleet_instruments_host | length > 0)
+    and sensorfleet_instruments_replace_configuration
+
+- name: Increment fleet configuration version
+  ansible.builtin.set_fact:
+    sensorfleet_instruments_new: >-
+      {{ sensorfleet_instruments_new | combine({'version': sensorfleet_instruments_new.version + 1}) }}
+  when: sensorfleet_instruments_new != sensorfleet_instruments_original
+
+- name: Detect fleet configuration changes
+  ansible.builtin.debug:
+    msg: Fleet configuration has changed
+  when: sensorfleet_instruments_new != sensorfleet_instruments_original
+  changed_when: true
+  notify: Write fleet instruments config
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

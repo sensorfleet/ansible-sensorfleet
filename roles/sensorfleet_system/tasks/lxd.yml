@@ -1,0 +1,11 @@
+---
+- name: Get current lxd images auto_update_interval
+  ansible.builtin.command: lxc config get images.auto_update_interval
+  register: sensorfleet_system_lxd_auto_update_interval
+  changed_when: false
+  check_mode: false
+
+- name: Disable lxd image auto updates
+  ansible.builtin.command: lxc config set images.auto_update_interval 0
+  when: sensorfleet_system_lxd_auto_update_interval.stdout | trim != "0"
+  changed_when: true

@@ -1,0 +1,75 @@
+---
+- name: Read /etc/hostname
+  ansible.builtin.slurp:
+    src: /etc/hostname
+  register: sensorfleet_sanity_checks_etc_hostname_raw
+
+- name: Verify ansible_facts['hostname'] matches inventory_hostname_short
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['hostname'] == inventory_hostname_short
+    fail_msg: >-
+      System hostname '{{ ansible_facts['hostname'] }}' does not match inventory hostname
+      '{{ inventory_hostname_short }}'.
+    success_msg: >-
+      System hostname matches inventory hostname '{{ inventory_hostname_short }}'.
+
+- name: Verify /etc/hostname matches ansible_facts['hostname']
+  ansible.builtin.assert:
+    that:
+      - (sensorfleet_sanity_checks_etc_hostname_raw.content | b64decode | trim) == ansible_facts['hostname']
+    fail_msg: >-
+      /etc/hostname content '{{ sensorfleet_sanity_checks_etc_hostname_raw.content | b64decode | trim }}'
+      does not match ansible_facts['hostname'] '{{ ansible_facts['hostname'] }}'.
+    success_msg: >-
+      /etc/hostname matches ansible_facts['hostname'] '{{ ansible_facts['hostname'] }}'.
+
+- name: Verify apt repository credentials are defined
+  ansible.builtin.assert:
+    that:
+      - sensorfleet_repos_repository_login is not none
+      - sensorfleet_repos_repository_password is not none
+    fail_msg: >-
+      sensorfleet_repos_repository_login and sensorfleet_repos_repository_password must both be
+      defined on this host.
+    success_msg: >-
+      sensorfleet_repos_repository_login and sensorfleet_repos_repository_password are defined.
+  when: "'fleetmgmt' in group_names or not sensorfleet_globals_use_fm_repo_service"
+
+- name: Check remote clock is in sync with the Ansible controller
+  any_errors_fatal: true
+  block:
+    - name: Get current time on the Ansible controller
+      ansible.builtin.command: date +%s
+      register: sensorfleet_sanity_checks_controller_epoch
+      delegate_to: localhost
+      become: false
+      changed_when: false
+      check_mode: false
+
+    - name: Determine if remote clock is in sync with the Ansible controller
+      ansible.builtin.set_fact:
+        sensorfleet_sanity_checks_clock_in_sync: >-
+          {{ ((ansible_facts['date_time'].epoch | int - sensorfleet_sanity_checks_controller_epoch.stdout | trim | int) | abs)
+             <= sensorfleet_sanity_checks_max_clock_skew_seconds }}
+
+    - name: Sync remote clock from the Ansible controller
+      ansible.builtin.command: "date -u --set=@{{ sensorfleet_sanity_checks_controller_epoch.stdout | trim }}"
+      when:
+        - not sensorfleet_sanity_checks_clock_in_sync
+        - sensorfleet_sanity_checks_clock_from_ansible_controller
+      changed_when: true
+
+    - name: Abort if remote clock is out of sync with the Ansible controller
+      ansible.builtin.fail:
+        msg: >-
+          Remote clock ({{ ansible_facts['date_time'].iso8601 }}) differs from the Ansible controller's clock
+          by more than {{ sensorfleet_sanity_checks_max_clock_skew_seconds }} seconds.
+      when:
+        - not sensorfleet_sanity_checks_clock_in_sync
+        - not sensorfleet_sanity_checks_clock_from_ansible_controller
+
+- name: Wait for any existing package manager locks to be released
+  ansible.builtin.shell: |
+    while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 5; done
+  changed_when: false

@@ -1,0 +1,39 @@
+---
+sensorfleet_ssh_server_protocol: 2
+sensorfleet_ssh_server_log_level: VERBOSE
+sensorfleet_ssh_server_x11_forwarding: false
+sensorfleet_ssh_server_max_auth_tries: 4
+sensorfleet_ssh_server_ignore_rhosts: true
+sensorfleet_ssh_server_hostbased_authentication: false
+sensorfleet_ssh_server_permit_root_login: without-password
+sensorfleet_ssh_server_permit_empty_passwords: false
+sensorfleet_ssh_server_permit_user_environment: false
+sensorfleet_ssh_server_client_alive_interval: 300
+sensorfleet_ssh_server_client_alive_count_max: 3
+sensorfleet_ssh_server_login_grace_time: 60
+sensorfleet_ssh_server_banner:
+  Unauthorized use of this system is prohibited.
+sensorfleet_ssh_server_use_pam: true
+sensorfleet_ssh_server_print_motd: false
+sensorfleet_ssh_server_challenge_response_authentication: false
+sensorfleet_ssh_server_tcp_keepalive: true
+sensorfleet_ssh_server_enable_sftp_subsystem: true
+sensorfleet_ssh_server_allow_users: []
+sensorfleet_ssh_server_allow_groups: []
+sensorfleet_ssh_server_deny_users: []
+sensorfleet_ssh_server_deny_groups: []
+sensorfleet_ssh_server_ciphers:
+  - aes256-gcm@openssh.com
+  - aes256-ctr
+sensorfleet_ssh_server_macs:
+  - hmac-sha2-512-etm@openssh.com
+sensorfleet_ssh_server_kexalgorithms:
+  - ecdh-sha2-nistp521
+  - ecdh-sha2-nistp384
+  - sntrup761x25519-sha512@openssh.com
+sensorfleet_ssh_server_additional_configs: {}
+sensorfleet_ssh_server_usedns: false
+sensorfleet_ssh_server_passwordauthentication: true
+sensorfleet_ssh_server_allow_tcp_forwarding: false
+sensorfleet_ssh_server_max_sessions: 10
+sensorfleet_ssh_server_max_startups: "10:30:60"

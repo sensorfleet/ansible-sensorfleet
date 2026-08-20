@@ -1,0 +1,11 @@
+---
+- name: Migrate SensorFleet hosts from the legacy Ansible layout
+  hosts: fleetmgmt:sensors
+  roles:
+    - role: sensorfleet_globals
+      tags: [always]
+    - role: sensorfleet_sanity_checks
+      tags: [always]
+    - role: sensorfleet_ansible_migrate
+    - role: sensorfleet_ansible_migrate_cleanup
+      tags: [cleanup, never]

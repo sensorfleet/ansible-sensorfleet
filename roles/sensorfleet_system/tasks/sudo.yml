@@ -1,0 +1,17 @@
+---
+- name: Install sudo logfile configuration
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/sensorfleet_logfile
+    content: |
+      Defaults logfile="{{ sensorfleet_system_sudo_logfile }}"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  when: sensorfleet_system_sudo_logfile is not none
+
+- name: Ensure sudo logfile configuration is absent
+  ansible.builtin.file:
+    path: /etc/sudoers.d/sensorfleet_logfile
+    state: absent
+  when: sensorfleet_system_sudo_logfile is none

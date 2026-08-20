@@ -1,0 +1,5 @@
+---
+- name: Ensure internal CA is created
+  ansible.builtin.command: fleetcert ca
+  args:
+    creates: /etc/sensorfleet/ca.pem

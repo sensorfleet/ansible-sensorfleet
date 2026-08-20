@@ -1,0 +1,8 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+  register: sensorfleet_repos_apt_update
+  until: sensorfleet_repos_apt_update is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"

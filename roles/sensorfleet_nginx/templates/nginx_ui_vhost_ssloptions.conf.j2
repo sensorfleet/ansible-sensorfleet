@@ -1,0 +1,19 @@
+# Managed by ansible, changes will be overwritten
+
+{% if sensorfleet_nginx_sensorui_vhost_ssl_dhparams_path %}
+ssl_dhparam {{ sensorfleet_nginx_sensorui_vhost_ssl_dhparams_path }};
+{% endif %}
+
+{% if sensorfleet_nginx_sensorui_vhost_ssl_protocols %}
+ssl_protocols {{ sensorfleet_nginx_sensorui_vhost_ssl_protocols | join(' ') }};
+{% endif %}
+
+{% if sensorfleet_nginx_sensorui_vhost_ssl_ciphers %}
+ssl_ciphers {{ sensorfleet_nginx_sensorui_vhost_ssl_ciphers | join(':') }};
+{% endif %}
+
+{% if sensorfleet_nginx_sensorui_vhost_ssl_ecdh_curve %}
+ssl_ecdh_curve {{ sensorfleet_nginx_sensorui_vhost_ssl_ecdh_curve }};
+{% endif %}
+
+ssl_prefer_server_ciphers {{ sensorfleet_nginx_sensorui_vhost_ssl_prefer_server_ciphers | ternary("on", "off") }};

@@ -1,0 +1,15 @@
+---
+- name: Install shell session timeout configuration
+  ansible.builtin.template:
+    src: 02-session-timeout.sh.j2
+    dest: /etc/profile.d/02-session-timeout.sh
+    owner: root
+    group: root
+    mode: "0644"
+  when: sensorfleet_system_shell_session_timeout is not none
+
+- name: Ensure shell session timeout configuration is absent
+  ansible.builtin.file:
+    path: /etc/profile.d/02-session-timeout.sh
+    state: absent
+  when: sensorfleet_system_shell_session_timeout is none

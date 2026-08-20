@@ -1,0 +1,5 @@
+---
+- name: Reload syslog-ng
+  ansible.builtin.systemd:
+    name: syslog-ng
+    state: reloaded

@@ -1,0 +1,29 @@
+domain (ip ip6) {
+    table filter {
+        chain INPUT {
+{% if 'fleetmgmt' in group_names and sensorfleet_globals_use_fm_repo_service %}
+            # FM connects to its own repo proxy via lo (kernel routes self-addressed traffic locally),
+            # sensors connect to it over the sensor tunnel
+            interface (lo tun-sensors) daddr 169.254.255.255 proto tcp dport 8443 ACCEPT;
+{% endif %}
+        }
+        chain OUTPUT {
+{% if sensorfleet_globals_use_fm_repo_service %}
+{% if 'fleetmgmt' in group_names %}
+            # FM connects to its own repo proxy via lo (kernel routes self-addressed traffic locally)
+            mod owner uid-owner _apt outerface lo daddr 169.254.255.255 proto tcp dport 8443 ACCEPT;
+            # FM's www-data (nginx) group gets unrestricted outbound web access
+            mod owner gid-owner www-data proto tcp dport (80 443) ACCEPT;
+{% else %}
+            # sensor connects to the FM's repo proxy over the management tunnel
+            mod owner uid-owner _apt outerface tun-mgmt daddr 169.254.255.255 proto tcp dport 8443 ACCEPT;
+{% endif %}
+{% else %}
+            # no FM repo proxy, let apt reach repositories directly over the internet
+            mod owner uid-owner _apt proto tcp dport (80 443) ACCEPT;
+{% endif %}
+        }
+        chain FORWARD {
+        }
+    }
+}

@@ -1,0 +1,15 @@
+---
+
+sensorfleet_nginx_sensorui_vhost_ssl_cert_path: null
+sensorfleet_nginx_sensorui_vhost_ssl_key_path: null
+sensorfleet_nginx_sensorui_vhost_ssl_cert: false
+sensorfleet_nginx_sensorui_vhost_ssl_key: false
+sensorfleet_nginx_sensorui_vhost_ssl_protocols:
+    - TLSv1.2
+sensorfleet_nginx_sensorui_vhost_ssl_ciphers:
+    - ECDHE-ECDSA-AES256-GCM-SHA384
+    - ECDHE-ECDSA-AES256-SHA384
+sensorfleet_nginx_sensorui_vhost_ssl_ecdh_curve: secp384r1
+sensorfleet_nginx_sensorui_vhost_ssl_prefer_server_ciphers: true
+sensorfleet_nginx_sensorui_vhost_ssl_dhparams: false
+sensorfleet_nginx_sensorui_vhost_ssl_dhparams_path: false

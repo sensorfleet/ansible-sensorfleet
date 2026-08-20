@@ -1,0 +1,5 @@
+---
+- name: Restart UI service
+  ansible.builtin.systemd:
+    name: "{{ 'fm-ui' if 'fleetmgmt' in group_names else 'sensor-ui' }}"
+    state: restarted
