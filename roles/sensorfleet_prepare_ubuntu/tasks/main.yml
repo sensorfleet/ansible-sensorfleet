@@ -1,17 +1,13 @@
 ---
-- name: Check if /etc/sensorfleet directory exists
-  ansible.builtin.stat:
-    path: /etc/sensorfleet
-  register: sensorfleet_prepare_ubuntu_sensorfleet_dir_stat
+- name: Gather installed package facts
+  ansible.builtin.package_facts:
 
 - name: Stop run if host is already prepared
   ansible.builtin.meta: end_host
   when:
-    - sensorfleet_prepare_ubuntu_sensorfleet_dir_stat.stat.exists
+    - "'sensorfleet-fleet-tool' in ansible_facts.packages"
+    - "'sensorfleet-fleetcert' in ansible_facts.packages"
     - not sensorfleet_prepare_ubuntu_force
-
-- name: Gather installed package facts
-  ansible.builtin.package_facts:
 
 - name: Upgrade all packages
   ansible.builtin.apt:
