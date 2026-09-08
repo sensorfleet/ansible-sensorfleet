@@ -8,7 +8,7 @@ domain (ip ip6) {
     }
 }
 {% else %}
-domain (ip) {
+domain (ip ip6) {
     table filter {
         chain OUTPUT {
             # allow the openvpn client to reach the FM's OpenVPN server
