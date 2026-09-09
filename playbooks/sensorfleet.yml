@@ -1,6 +1,26 @@
 ---
 - name: Set up SensorFleet hosts
   hosts: fleetmgmt:sensors
+  vars:
+    sensorfleet_require_prepared_host: true
+  pre_tasks:
+    - name: Gather installed package facts
+      ansible.builtin.package_facts:
+      tags: [always]
+
+    - name: Verify this host has been prepared by prepare_ubuntu.yml
+      ansible.builtin.assert:
+        that:
+          - "'sensorfleet-fleet-tool' in ansible_facts.packages"
+          - "'sensorfleet-fleetcert' in ansible_facts.packages"
+        fail_msg: >-
+          This host does not appear to have been prepared yet (sensorfleet-fleet-tool /
+          sensorfleet-fleetcert are not installed). Run playbooks/prepare_ubuntu.yml against
+          it first, or set sensorfleet_require_prepared_host=false to skip this check.
+        success_msg: >-
+          Host has already been prepared by prepare_ubuntu.yml.
+      when: sensorfleet_require_prepared_host
+      tags: [always]
   roles:
     - role: sensorfleet_globals
       tags: [always]
