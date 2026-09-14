@@ -3,7 +3,6 @@
 
 sensorfleet_globals_sshd_port: 22
 sensorfleet_globals_sshd_additional_ports: []
-sensorfleet_globals_usermgmt_enabled: true
 
 sensorfleet_globals_use_grsec_kernel: false
 sensorfleet_globals_enable_auditd: true

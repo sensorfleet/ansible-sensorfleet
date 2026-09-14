@@ -118,7 +118,6 @@ LEGACY_TO_NEW_VARS: dict[str, VarMigration] = {
     # sensorfleet_globals
     "sshd_port": VarMigration(new_name="sensorfleet_globals_sshd_port"),
     "sshd_additional_ports": VarMigration(new_name="sensorfleet_globals_sshd_additional_ports"),
-    "sensorfleet_usermgmt_enabled": VarMigration(new_name="sensorfleet_globals_usermgmt_enabled"),
     "install_grsec_kernel": VarMigration(new_name="sensorfleet_globals_use_grsec_kernel"),
     "use_fm_repo_service": VarMigration(new_name="sensorfleet_globals_use_fm_repo_service"),
     "use_fm_repo_connection": VarMigration(new_name="sensorfleet_globals_use_fm_repo_service"),
@@ -126,7 +125,6 @@ LEGACY_TO_NEW_VARS: dict[str, VarMigration] = {
     "enable_auditd": VarMigration(new_name="sensorfleet_globals_enable_auditd"),
     # sensorfleet_fleetgram
     "enable_fleetgram_tls": VarMigration(new_name="sensorfleet_fleetgram_enable_tls"),
-    "force_initial_sensor_config": VarMigration(new_name="sensorfleet_fleetgram_force_initial_sensor_config"),
     # sensorfleet_license
     "sensorfleet_license": VarMigration(new_name="sensorfleet_license_base64"),
     # sensorfleet_internal_certificates

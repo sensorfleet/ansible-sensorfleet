@@ -1,4 +1,5 @@
 ---
+# Only meant to be changed for special development purposes -- must never be
+# disabled in normal/production circumstances.
 sensorfleet_fleetgram_enable_tls: true
-sensorfleet_fleetgram_force_initial_sensor_config: false
 sensorfleet_fleetgram_sensor_messaging_fm_only: true
