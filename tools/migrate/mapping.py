@@ -240,13 +240,6 @@ LEGACY_TO_NEW_VARS: dict[str, VarMigration] = {
         new_name="sensorfleet_instruments_host", transform=list_to_dict_by_key_value("name", "config")
     ),
     "sensorfleet_instrument_configs": VarMigration(new_name="sensorfleet_instruments_instrument_configs_host"),
-    # sensorfleet_sysctl
-    "sysctl": VarMigration(
-        new_name="sensorfleet_sysctl_defaults", transform=list_to_dict_by_key_value("name", "value")
-    ),
-    "grsecurity_sysctl": VarMigration(
-        new_name="sensorfleet_sysctl_grsec_defaults", transform=list_to_dict_by_key_value("name", "value")
-    ),
     # sensorfleet_usermgmt (identity renames -- already the same name on both sides)
     "sensorfleet_usermgmt_credential_dir": VarMigration(new_name="sensorfleet_usermgmt_credential_dir"),
     "sensorfleet_usermgmt_default_password": VarMigration(new_name="sensorfleet_usermgmt_default_password"),

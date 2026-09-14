@@ -74,7 +74,7 @@ Renamed 11 variable occurrence(s):
   /root/ansible-sensor/group_vars/all.yml [<top-level>]: system_repository_source -> sensorfleet_repos_repository_os
   /root/ansible-sensor/group_vars/all.yml [<top-level>]: apt_extra_packages -> sensorfleet_system_extra_packages
   /root/ansible-sensor/group_vars/fleetmgmt.yml [<top-level>]: sensorfleet_ferm_rules -> sensorfleet_firewall_ferm_rules (value transformed)
-  /root/ansible-sensor/group_vars/fleetmgmt.yml [<top-level>]: sysctl -> sensorfleet_sysctl_defaults (value transformed)
+  /root/ansible-sensor/group_vars/fleetmgmt.yml [<top-level>]: sysctl -> sensorfleet_sysctl_overrides (value transformed)
 
 Skipped 1 file(s):
   /root/ansible-sensor/group_vars/sensors.yml: empty file

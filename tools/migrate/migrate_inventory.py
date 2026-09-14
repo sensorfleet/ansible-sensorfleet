@@ -31,6 +31,7 @@ from special_cases import (
     default_use_fm_repo_service,
     inject_fleetmgmt_openvpn_client_ip,
     merge_apt_repository_url,
+    merge_sysctl_overrides,
 )
 from yaml_io import dump_yaml_file, load_yaml_file, rename_key_in_place
 
@@ -165,6 +166,7 @@ def walk_hosts_tree(
     vars_block = node.get("vars")
     if vars_block:
         merge_apt_repository_url(vars_block, file=file, location=f"{path}.vars", report=report)
+        merge_sysctl_overrides(vars_block, file=file, location=f"{path}.vars", report=report)
         rename_keys_in_mapping(vars_block, mapping_table, file=file, location=f"{path}.vars", report=report)
 
     hosts_block = node.get("hosts")
@@ -172,6 +174,9 @@ def walk_hosts_tree(
         for host_name, host_vars in hosts_block.items():
             if host_vars:
                 merge_apt_repository_url(
+                    host_vars, file=file, location=f"{path}.hosts.{host_name}", report=report
+                )
+                merge_sysctl_overrides(
                     host_vars, file=file, location=f"{path}.hosts.{host_name}", report=report
                 )
                 rename_keys_in_mapping(
@@ -220,6 +225,7 @@ def process_vars_file(path: Path, mapping_table: dict[str, VarMigration], report
         return doc
 
     merge_apt_repository_url(doc, file=path, location="<top-level>", report=report)
+    merge_sysctl_overrides(doc, file=path, location="<top-level>", report=report)
     rename_keys_in_mapping(doc, mapping_table, file=path, location="<top-level>", report=report)
     return doc
 

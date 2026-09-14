@@ -11,6 +11,8 @@ from typing import Any
 
 from ruamel.yaml.comments import CommentedMap
 
+from mapping import list_to_dict_by_key_value
+
 FLEETMGMT_OPENVPN_CLIENT_IP = "169.254.255.255"
 USE_FM_REPO_SERVICE_VAR = "sensorfleet_globals_use_fm_repo_service"
 ENFORCE_EGRESS_POLICY_VAR = "sensorfleet_firewall_enforce_egress_policy"
@@ -18,7 +20,7 @@ ENFORCE_EGRESS_POLICY_VAR = "sensorfleet_firewall_enforce_egress_policy"
 # New-side variable names produced directly by the functions below (not sourced from
 # LEGACY_TO_NEW_VARS) -- callers should treat these as already-migrated names too,
 # not flag them as unmapped when the generic renamer encounters them afterward.
-SPECIAL_CASE_NEW_NAMES = {"sensorfleet_repos_repository_fleet"}
+SPECIAL_CASE_NEW_NAMES = {"sensorfleet_repos_repository_fleet", "sensorfleet_sysctl_overrides"}
 
 
 def inject_fleetmgmt_openvpn_client_ip(hosts_doc: Any) -> None:
@@ -78,6 +80,43 @@ def merge_apt_repository_url(mapping: Any, *, file: Any, location: str, report: 
             "sensorfleet_repos_repository_fleet",
             True,
         )
+
+
+def merge_sysctl_overrides(mapping: Any, *, file: Any, location: str, report: Any) -> None:
+    """Legacy keeps plain sysctl values and grsec-specific sysctl values in two
+    separate lists (sysctl, grsecurity_sysctl), each a list of {name, value}
+    objects -- the new scheme's sensorfleet_sysctl_overrides is a single dict,
+    applied unconditionally and last (after sensorfleet_sysctl_defaults and, only
+    when sensorfleet_globals_use_grsec_kernel is true, sensorfleet_sysctl_grsec_defaults --
+    see roles/sensorfleet_sysctl/tasks/main.yml). A legacy host that set
+    grsecurity_sysctl presumably already intended a grsec kernel, so folding both
+    into one unconditional override on migration is an accepted simplification.
+
+    Either legacy key can appear alone -- unlike merge_apt_repository_url, this
+    doesn't require both to be present. Whichever are present get popped and
+    combined into sensorfleet_sysctl_overrides, with grsecurity_sysctl's entries
+    taking precedence over sysctl's for any key defined in both.
+    """
+    if not hasattr(mapping, "get"):
+        return
+
+    has_sysctl = "sysctl" in mapping
+    has_grsec = "grsecurity_sysctl" in mapping
+    if not has_sysctl and not has_grsec:
+        return
+
+    to_dict = list_to_dict_by_key_value("name", "value")
+    sysctl_dict = to_dict(mapping.pop("sysctl")) if has_sysctl else {}
+    grsec_dict = to_dict(mapping.pop("grsecurity_sysctl")) if has_grsec else {}
+    mapping["sensorfleet_sysctl_overrides"] = {**sysctl_dict, **grsec_dict}
+
+    if has_sysctl and has_grsec:
+        old_name = "sysctl + grsecurity_sysctl"
+    elif has_grsec:
+        old_name = "grsecurity_sysctl"
+    else:
+        old_name = "sysctl"
+    report.add_renamed(file, location, old_name, "sensorfleet_sysctl_overrides", True)
 
 
 def default_use_fm_repo_service(
