@@ -15,6 +15,15 @@ Roles are listed in the order [`playbooks/sensorfleet.yml`](../playbooks/sensorf
 
 ---
 
+## Inventory variables
+
+Required per inventory, with no role default. Set them in `hosts.yml` (see the [example inventory](../inventories/example/hosts.yml)).
+
+| Variable | Set on | Type | Description |
+|---|---|---|---|
+| `sensorfleet_openvpn_server_connect_ip` | `all` | string (IP/hostname) | Address the sensors dial to reach the FM's OpenVPN server (`remote` in the client config). Usually the FM's management IP. |
+| `sensorfleet_openvpn_internal_ip` | every host | string (IPv4) | This host's own address inside the OpenVPN tunnel. The FM's value is the server's tunnel address, which must be `169.254.255.255` because several roles hardcode it. Each sensor needs a unique client address from `169.254.0.0/16` (e.g. `169.254.1.1`), which the FM pushes to that sensor via its CCD file. The value is also embedded as an IP SAN in the host's internal certificate, and it is the address the FM's fleetgram config uses to reach each sensor. |
+
 ## sensorfleet_globals
 
 Shared defaults with no tasks of its own — every variable here is consumed by *other* roles' tasks/templates, not by this role.
