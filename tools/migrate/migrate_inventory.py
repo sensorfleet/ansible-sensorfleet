@@ -29,7 +29,7 @@ from special_cases import (
     SPECIAL_CASE_NEW_NAMES,
     default_disable_egress_policy_enforcement,
     default_use_fm_repo_service,
-    inject_fleetmgmt_openvpn_client_ip,
+    inject_fleetmgmt_openvpn_internal_ip,
     merge_apt_repository_url,
     merge_sysctl_overrides,
 )
@@ -207,7 +207,7 @@ def process_hosts_file(path: Path, mapping_table: dict[str, VarMigration], repor
     for group_name, group_node in doc.items():
         walk_hosts_tree(group_node, mapping_table, report, file=path, path=group_name)
 
-    inject_fleetmgmt_openvpn_client_ip(doc)
+    inject_fleetmgmt_openvpn_internal_ip(doc)
 
     return doc
 

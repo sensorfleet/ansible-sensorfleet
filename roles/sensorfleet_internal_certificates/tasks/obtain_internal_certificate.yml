@@ -4,7 +4,7 @@
     fleetcert internal
     --key /etc/sensorfleet/tls/internal/{{ inventory_hostname_short }}.key
     --hostname {{ inventory_hostname_short }}
-    --ip {{ sensorfleet_openvpn_client_ip }}
+    --ip {{ sensorfleet_openvpn_internal_ip }}
     csr /etc/sensorfleet/csr/{{ inventory_hostname_short }}.internal.csr
   args:
     creates: "/etc/sensorfleet/csr/{{ inventory_hostname_short }}.internal.csr"

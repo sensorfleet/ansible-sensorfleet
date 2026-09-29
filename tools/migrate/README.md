@@ -106,7 +106,7 @@ If a migration needs to combine multiple legacy variables into one, or add a
 variable that has no legacy source at all (things a single old-name -> new-name
 table entry can't express), add a function to `special_cases.py` instead and wire
 it into `migrate_inventory.py`'s `process_vars_file`/`walk_hosts_tree` — see
-`merge_apt_repository_url` and `inject_fleetmgmt_openvpn_client_ip` for examples of
+`merge_apt_repository_url` and `inject_fleetmgmt_openvpn_internal_ip` for examples of
 each. For a variable that should get an explicit default only when it's missing
 from the *entire* migrated inventory (not just one file), use
 `inject_default_if_absent` (see `default_use_fm_repo_service` and

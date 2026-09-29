@@ -1,0 +1,45 @@
+---
+# Variables for every host. See docs/VARIABLES.md for the full list and role defaults.
+
+# Root password hash (generate with: mkpasswd --method=sha-512). Unset leaves it untouched.
+# sensorfleet_system_root_password: "$6$replace_me"
+
+# Apt repositories. See the section "Release channels" in the User Manual.
+sensorfleet_repos_apt_release: release-26.1
+sensorfleet_repos_repository_fleet: https://repository.sensorfleet.com/fleet
+# Overrides the default Ubuntu repositories. For full product support use the
+# SensorFleet Ubuntu mirror or a mirror of it.
+sensorfleet_repos_repository_os: https://repository.sensorfleet.com/ubuntu-mirror
+
+# Repository credentials. Required on fleetmgmt, and on sensors when the FM repo service is off.
+# Keep real credentials out of version control (e.g. use ansible-vault).
+# sensorfleet_repos_repository_login: replace_me
+# sensorfleet_repos_repository_password: replace_me
+
+# Sensors fetch packages through the FM's repository proxy instead of directly.
+sensorfleet_globals_use_fm_repo_service: true
+
+# Install some useful extra packages
+sensorfleet_system_extra_packages:
+  - bwm-ng
+  - htop
+  - less
+
+# Optionally, set retention times (in seconds)
+# sensorfleet_config_default_retention_rules:
+#   alert_data_age: 1213200
+#   alert_event_age: 1213200
+#   delete_data_age: 1209600
+#   delete_event_age: 1209600
+
+# If supplied with a custom license, install it with this variable
+# sensorfleet_license_base64: |
+#   replace_me
+
+# Unmatched outbound traffic is dropped by default. Set to false to only log it.
+# sensorfleet_firewall_enforce_egress_policy: false
+
+# Forward logs to a remote syslog host
+# sensorfleet_logging_loghost_host: loghost.example.com
+# sensorfleet_logging_loghost_port: 514
+# sensorfleet_logging_loghost_transport: tcp

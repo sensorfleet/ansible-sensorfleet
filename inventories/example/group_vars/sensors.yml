@@ -1,0 +1,47 @@
+---
+# Variables for every sensor. Per-sensor settings go in host_vars/<sensor>.yml.
+
+# Example of creating bridges/instruments on sensors using ansible
+# - Instruments are named <name>@<sensor hostname> in the fleet config
+# - Existing instruments/bridges not listed here are left untouched
+# - Per-sensor instruments should be defined as sensorfleet_instruments_host in host_vars
+
+# sensorfleet_config_bridges:
+#   br0:
+#     friendly_name: capture
+#     type: mirror-bridge
+
+# sensorfleet_instruments_group:
+#   suricata_0:
+#     type: suricata
+#     interfaces:
+#       eth0:
+#         capabilities:
+#           - rx
+#         dhcp_client: null
+#         friendly_name: capture-in
+#         interface: eth0
+#         sensor_bridge_name: br0
+#         type: mirror-bridge
+#   capco_0:
+#     type: capco
+#     interfaces:
+#       ens9f0:
+#         interface: ens9f0
+#         friendly_name: cap0
+#         type: physical
+#         capabilities:
+#           - rx
+#         dhcp_client: false
+#       eth0:
+#         interface: eth0
+#         friendly_name: out0
+#         sensor_bridge_name: br0
+#         type: mirror-bridge
+#         capabilities:
+#           - tx
+#         dhcp_client: null
+#   passivedns_0:
+#     type: passivedns
+#   eventexporter_0:
+#     type: eventexporter

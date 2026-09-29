@@ -1,3 +1,5 @@
 /inventories/devel
+/inventories/*/credentials
+/inventories/*/files/bootstrap
 /.venv
 /tools/*/__pycache__

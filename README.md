@@ -38,25 +38,41 @@ Every inventory has exactly two groups:
 - **`fleetmgmt`** — normally a single host, the fleet management server.
 - **`sensors`** — one or more sensor hosts managed by that fleet management server.
 
-[`inventories/example/hosts.yml`](inventories/example/hosts.yml) is the checked-in starting-point template — copy it as the basis for a new environment (it is not meant to be run against directly):
+[`inventories/example/`](inventories/example/) is the checked-in starting-point template — copy the whole directory as the basis for a new environment (it is not meant to be run against directly):
+
+```
+inventories/example/
+  hosts.yml                 # fleetmanagement + sensor001/sensor002, OpenVPN addressing
+  group_vars/all.yml        # repositories, extra packages, commented-out optional settings
+  group_vars/fleetmgmt.yml  # FM firewall rule example, initial admin account options
+  group_vars/sensors.yml    # commented-out bridge/instrument examples
+  host_vars/sensor001.yml   # commented-out per-sensor instruments, configs and homenets
+```
 
 ```yaml
 all:
   vars:
-    sensorfleet_openvpn_server_connect_ip: 192.168.0.10   # address sensors dial to reach the FM's OpenVPN server
     ansible_user: root
+    sensorfleet_openvpn_server_connect_ip: 192.168.0.10   # address sensors dial to reach the FM's OpenVPN server
   children:
     fleetmgmt:
       hosts:
         fleetmanagement:
           ansible_host: 192.168.0.10
-          sensorfleet_openvpn_client_ip: 169.254.255.255   # this host's address inside the OpenVPN tunnel
+          sensorfleet_openvpn_internal_ip: 169.254.255.255   # FM's (server) address inside the OpenVPN tunnel
     sensors:
       hosts:
         sensor001:
           ansible_host: 192.168.1.101
-          sensorfleet_openvpn_client_ip: 169.254.1.1
+          sensorfleet_openvpn_internal_ip: 169.254.1.1       # sensor's (client) address, unique per sensor
+        sensor002:
+          ansible_host: 192.168.2.102
+          sensorfleet_openvpn_internal_ip: 169.254.1.2
 ```
+
+Every host needs `sensorfleet_openvpn_internal_ip`, its own address inside the OpenVPN tunnel. The FM always uses `169.254.255.255`, the server end of the tunnel, and each sensor gets a unique address from `169.254.0.0/16`. See [`docs/VARIABLES.md`](docs/VARIABLES.md#inventory-variables).
+
+Repository credentials (`sensorfleet_repos_repository_login`/`_password`) are left commented out with `replace_me` placeholders. They must be set before running against a real fleet (always on `fleetmgmt`), preferably via `ansible-vault` rather than in plain text. Generated admin credentials are written under `<inventory>/credentials/`, which is gitignored.
 
 `inventories/devel/` is the local, gitignored inventory used for real development/test targets (hosts, `group_vars`, cached PKI material, generated credentials). It is never committed — see `.gitignore`. Role-specific configuration on top of the defaults documented in [`docs/VARIABLES.md`](docs/VARIABLES.md) is set the same way: inventory `hosts.yml` vars, or `group_vars`/`host_vars` files alongside it.
 

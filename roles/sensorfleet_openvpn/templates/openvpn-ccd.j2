@@ -1,4 +1,4 @@
-ifconfig-push {{ sensorfleet_openvpn_client_ip }} 169.254.255.255
+ifconfig-push {{ sensorfleet_openvpn_internal_ip }} 169.254.255.255
 {% if sensorfleet_openvpn_push_routes_v4 %}
 {% for route in sensorfleet_openvpn_push_routes_v4 %}
 {% if 'ipaddr' is filter %}

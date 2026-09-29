@@ -1,0 +1,15 @@
+---
+# Variables for the fleet management host.
+
+# Allow HTTP/HTTPS access to FM from 10.0.0.0/24
+sensorfleet_firewall_ferm_rules:
+  - domain ip table filter chain INPUT saddr 10.0.0.0/24 proto tcp dport (80 443) ACCEPT;
+
+# An admin user is created only if *no users exist* in the user database.
+# Unless a password is given below, a generated one is saved to
+# <inventory dir>/<credential dir>/ui:admin on the Ansible controller.
+# sensorfleet_usermgmt_credential_dir: credentials
+# sensorfleet_usermgmt_default_username: admin
+
+# Define admin password rather than generate it. Password change is forced by default on first login.
+# sensorfleet_usermgmt_default_password: replace_me

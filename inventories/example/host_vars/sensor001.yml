@@ -1,0 +1,36 @@
+---
+# Per-sensor variables, overriding group_vars where needed.
+
+# sensorfleet_system_root_password: "$6$replace_me"
+
+# Example of creating instruments on this sensor, merged over sensorfleet_instruments_group
+# sensorfleet_instruments_host:
+#   passivedns_0:
+#     type: passivedns
+#   suricata_0:
+#     type: suricata
+#     interfaces:
+#       eth0:
+#         capabilities:
+#           - rx
+#         dhcp_client: null
+#         friendly_name: capture-in
+#         interface: eth0
+#         sensor_bridge_name: br0
+#         type: mirror-bridge
+
+# Instrument configuration is replaced by what is defined here for the instrument
+# sensorfleet_instruments_instrument_configs_host:
+#   passivedns_0:
+#     enable_aggregate_events: true
+#   recorder_0:
+#     elasticsearch_jvm_max_ram: 3561
+#     elasticsearch_jvm_min_ram: 3561
+
+# sensorfleet_config_homenets:
+#   - name: Homenet 1
+#     networks:
+#       - 192.168.0.0/16
+#   - name: Homenet 2
+#     networks:
+#       - 10.0.0.0/8
