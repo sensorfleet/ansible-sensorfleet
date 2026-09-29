@@ -24,6 +24,16 @@
     success_msg: >-
       /etc/hostname matches ansible_facts['hostname'] '{{ ansible_facts['hostname'] }}'.
 
+- name: Verify OpenVPN tunnel address is defined
+  ansible.builtin.assert:
+    that:
+      - sensorfleet_openvpn_internal_ip is defined
+      - sensorfleet_openvpn_client_ip is not defined
+    fail_msg: >-
+      Set sensorfleet_openvpn_internal_ip on this host (sensorfleet_openvpn_client_ip was renamed to it).
+    success_msg: >-
+      sensorfleet_openvpn_internal_ip is {{ sensorfleet_openvpn_internal_ip | default('') }}.
+
 - name: Verify apt repository credentials are defined
   ansible.builtin.assert:
     that:

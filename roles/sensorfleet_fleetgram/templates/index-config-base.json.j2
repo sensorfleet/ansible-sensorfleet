@@ -17,7 +17,7 @@
 {% for sensor in sensorfleet_fleetgram_sensors_to_render %}
 {% set _ = sensorfleet_fleetgram_config_entries.append({
     'name': hostvars[sensor]['inventory_hostname_short'],
-    'url': 'tcp://' ~ hostvars[sensor]['sensorfleet_openvpn_client_ip'] ~ ':51337',
+    'url': 'tcp://' ~ hostvars[sensor]['sensorfleet_openvpn_internal_ip'] ~ ':51337',
     'relay': false
 }) %}
 {% endfor %}

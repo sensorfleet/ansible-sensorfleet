@@ -190,7 +190,7 @@ LEGACY_TO_NEW_VARS: dict[str, VarMigration] = {
     # sensorfleet_openvpn
     "vpn_server_host": VarMigration(new_name="sensorfleet_openvpn_server_host"),
     "vpn_server_connect_ip": VarMigration(new_name="sensorfleet_openvpn_server_connect_ip"),
-    "vpn_client_ip": VarMigration(new_name="sensorfleet_openvpn_client_ip"),
+    "vpn_client_ip": VarMigration(new_name="sensorfleet_openvpn_internal_ip"),
     "vpn_tls_cipher": VarMigration(new_name="sensorfleet_openvpn_tls_cipher"),
     "vpn_cipher": VarMigration(new_name="sensorfleet_openvpn_cipher"),
     "vpn_dhparams": VarMigration(new_name="sensorfleet_openvpn_dhparams"),

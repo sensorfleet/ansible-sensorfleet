@@ -13,7 +13,7 @@ from ruamel.yaml.comments import CommentedMap
 
 from mapping import list_to_dict_by_key_value
 
-FLEETMGMT_OPENVPN_CLIENT_IP = "169.254.255.255"
+FLEETMGMT_OPENVPN_INTERNAL_IP = "169.254.255.255"
 USE_FM_REPO_SERVICE_VAR = "sensorfleet_globals_use_fm_repo_service"
 ENFORCE_EGRESS_POLICY_VAR = "sensorfleet_firewall_enforce_egress_policy"
 
@@ -23,9 +23,9 @@ ENFORCE_EGRESS_POLICY_VAR = "sensorfleet_firewall_enforce_egress_policy"
 SPECIAL_CASE_NEW_NAMES = {"sensorfleet_repos_repository_fleet", "sensorfleet_sysctl_overrides"}
 
 
-def inject_fleetmgmt_openvpn_client_ip(hosts_doc: Any) -> None:
-    """Legacy inventories never gave the fleetmgmt host a VPN client IP (only
-    sensors had one) -- the new scheme needs sensorfleet_openvpn_client_ip set on
+def inject_fleetmgmt_openvpn_internal_ip(hosts_doc: Any) -> None:
+    """Legacy inventories never gave the fleetmgmt host a VPN IP (only
+    sensors had one) -- the new scheme needs sensorfleet_openvpn_internal_ip set on
     every host in the fleetmgmt group. Walks the hosts tree looking for any group
     named "fleetmgmt" at any nesting depth, and sets the IP on each of its hosts
     only if not already present.
@@ -49,8 +49,8 @@ def _walk_for_fleetmgmt(group_name: str, node: Any) -> None:
                 if host_vars is None:
                     host_vars = {}
                     hosts_block[host_name] = host_vars
-                if "sensorfleet_openvpn_client_ip" not in host_vars:
-                    host_vars["sensorfleet_openvpn_client_ip"] = FLEETMGMT_OPENVPN_CLIENT_IP
+                if "sensorfleet_openvpn_internal_ip" not in host_vars:
+                    host_vars["sensorfleet_openvpn_internal_ip"] = FLEETMGMT_OPENVPN_INTERNAL_IP
 
     children_block = node.get("children")
     if children_block:
