@@ -7,7 +7,7 @@ This file provides guidance to AI coding agents working with code in this reposi
 `ansible-sensorfleet` is an Ansible project for SensorFleet, and is its own git repository (not a submodule of anything). Current state:
 
 - `ansible.cfg` is configured (`roles_path = roles`, `interpreter_python = /usr/bin/python3`).
-- `inventories/example/hosts.yml` is a checked-in example inventory (a small fleetmgmt host + a few sensors) intended as a starting point, not a real deployment target.
+- `inventories/example/` is a checked-in example inventory (`hosts.yml` with a fleetmgmt host + two sensors, plus `group_vars`/`host_vars` with sensible defaults and commented-out options) intended as a starting point, not a real deployment target. Never commit real credentials there — repository credentials are `replace_me` placeholders.
 - `inventories/devel/` holds real local/developer inventory data (hosts, group_vars, cached PKI material, generated credentials) and is excluded from git via `.gitignore` (`/inventories/devel`) — never expect it to be committed or shared.
 - `roles/` contains many roles, all named `sensorfleet_<component>` (see `ls roles/` for the current set).
 - `playbooks/` contains `sensorfleet.yml` (main provisioning play, `hosts: fleetmgmt:sensors`), `prepare_ubuntu.yml`, and `migrate_legacy_ansible.yml`.
