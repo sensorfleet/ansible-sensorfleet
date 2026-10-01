@@ -28,9 +28,27 @@
     path: "/etc/sensorfleet/tls/internal/{{ inventory_hostname_short }}.crt"
   register: sensorfleet_internal_certificates_internal_crt_stat
 
+- name: Read internal certificate details
+  ansible.builtin.command: "openssl x509 -in /etc/sensorfleet/tls/internal/{{ inventory_hostname_short }}.crt -noout -text"
+  register: sensorfleet_internal_certificates_crt_text
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: sensorfleet_internal_certificates_internal_crt_stat.stat.exists
+
+- name: Determine whether internal certificate needs to be issued
+  ansible.builtin.set_fact:
+    sensorfleet_internal_certificates_needs_cert: >-
+      {{ not sensorfleet_internal_certificates_internal_crt_stat.stat.exists
+         or sensorfleet_internal_certificates_crt_text.rc != 0
+         or ('DNS:' ~ inventory_hostname_short)
+            not in (sensorfleet_internal_certificates_crt_text.stdout | regex_findall('DNS:[^,\s]+'))
+         or ('IP Address:' ~ sensorfleet_openvpn_internal_ip)
+            not in (sensorfleet_internal_certificates_crt_text.stdout | regex_findall('IP Address:[^,\s]+')) }}
+
 - name: Include internal certificate acquisition tasks
   ansible.builtin.include_tasks: obtain_internal_certificate.yml
-  when: not sensorfleet_internal_certificates_internal_crt_stat.stat.exists
+  when: sensorfleet_internal_certificates_needs_cert | bool
 
 - name: Include certificate configuration tasks
   ansible.builtin.include_tasks: certificate_config.yml
