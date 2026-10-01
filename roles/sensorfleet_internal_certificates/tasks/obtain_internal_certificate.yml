@@ -6,8 +6,7 @@
     --hostname {{ inventory_hostname_short }}
     --ip {{ sensorfleet_openvpn_internal_ip }}
     csr /etc/sensorfleet/csr/{{ inventory_hostname_short }}.internal.csr
-  args:
-    creates: "/etc/sensorfleet/csr/{{ inventory_hostname_short }}.internal.csr"
+  changed_when: true
 
 - name: Slurp internal certificate CSR
   ansible.builtin.slurp:
@@ -33,6 +32,7 @@
   throttle: 1
   changed_when: true
   delegate_to: "{{ groups['fleetmgmt'][0] }}"
+  notify: internal certificate changed
 
 - name: Slurp signed internal certificate from FM
   ansible.builtin.slurp:
@@ -49,3 +49,4 @@
     group: root
     mode: "0644"
   when: "'fleetmgmt' not in group_names"
+  notify: internal certificate changed

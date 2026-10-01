@@ -1,7 +1,13 @@
 ---
-- name: Internal certificate changed
+- name: Reload nginx
   ansible.builtin.systemd:
     name: nginx
     state: reloaded
+  listen: internal certificate changed
+  when: sensorfleet_prepare_ubuntu_bootstrapping is not defined or not sensorfleet_prepare_ubuntu_bootstrapping
+- name: Restart sensormessagebroker
+  ansible.builtin.systemd:
+    name: sensormessagebroker
+    state: restarted
   listen: internal certificate changed
   when: sensorfleet_prepare_ubuntu_bootstrapping is not defined or not sensorfleet_prepare_ubuntu_bootstrapping
