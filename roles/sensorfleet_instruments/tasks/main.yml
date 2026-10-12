@@ -1,4 +1,19 @@
 ---
+# Without instrument meta packages the UI does not know e.g. which instruments have
+# an UI. sensor-orchestrator only lists packages named like this. Present, not
+# latest: upgrading a meta apart from its instrument breaks their version match.
+- name: Install instrument meta packages
+  ansible.builtin.apt:
+    name: "*-instrument-meta"
+    state: present
+    install_recommends: false
+    update_cache: true
+    cache_valid_time: 3600
+  register: sensorfleet_instruments_meta_install_result
+  until: sensorfleet_instruments_meta_install_result is succeeded
+  retries: "{{ sensorfleet_globals_apt_lock_retries }}"
+  delay: "{{ sensorfleet_globals_apt_lock_retry_delay_seconds }}"
+
 - name: Show current fleet configuration
   ansible.builtin.command: fleet config show
   register: sensorfleet_instruments_show_result
