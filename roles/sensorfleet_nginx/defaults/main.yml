@@ -13,3 +13,12 @@ sensorfleet_nginx_sensorui_vhost_ssl_ecdh_curve: secp384r1
 sensorfleet_nginx_sensorui_vhost_ssl_prefer_server_ciphers: true
 sensorfleet_nginx_sensorui_vhost_ssl_dhparams: false
 sensorfleet_nginx_sensorui_vhost_ssl_dhparams_path: false
+
+# Self-signed UI certificate renewal (only when ui.crt is the package default)
+sensorfleet_nginx_ui_cert_renew: true
+sensorfleet_nginx_ui_cert_force_renew: false
+sensorfleet_nginx_ui_cert_valid_days: 825
+sensorfleet_nginx_ui_cert_renew_before_days: 14
+sensorfleet_nginx_ui_cert_extra_sans: []
+sensorfleet_nginx_ui_selfsigned_cert_path: /etc/ssl/certs/ssl-cert-snakeoil-ec.pem
+sensorfleet_nginx_ui_selfsigned_key_path: /etc/ssl/private/ssl-cert-snakeoil-ec.key

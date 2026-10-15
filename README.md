@@ -84,6 +84,12 @@ ansible-playbook -i inventories/devel/hosts.yml playbooks/sensorfleet.yml
 ansible-playbook -i inventories/devel/hosts.yml playbooks/sensorfleet.yml --tags firewall,ssh
 ```
 
+The self-signed web UI certificate is renewed by the `nginx` role when it nears expiry. To only renew it (or force a renewal), run:
+
+```bash
+ansible-playbook -i inventories/devel/hosts.yml playbooks/sensorfleet.yml --tags renew_ui_cert [-e sensorfleet_nginx_ui_cert_force_renew=true]
+```
+
 ### `playbooks/prepare_ubuntu.yml` — bootstrap a fresh Ubuntu 22.04 host
 
 Run once, before the first `sensorfleet.yml` run, on a fresh Ubuntu install: upgrades/purges packages, sets up base mounts and certificates/VPN, and installs the role-specific package. It's guarded to skip hosts that are already bootstrapped, unless explicitly forced.

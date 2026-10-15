@@ -203,7 +203,7 @@ Installs the SSL certificate/key nginx uses for the sensor UI vhost, and related
 |---|---|---|---|
 | `sensorfleet_nginx_sensorui_vhost_ssl_cert_path` | `null` | string (path) or `null` | Filesystem path the certificate is written to (also symlinked from `/etc/ssl/sensorfleet/ui.crt`). Must be set whenever `sensorfleet_nginx_sensorui_vhost_ssl_cert` is used. |
 | `sensorfleet_nginx_sensorui_vhost_ssl_key_path` | `null` | string (path) or `null` | Filesystem path the private key is written to (also symlinked from `/etc/ssl/sensorfleet/ui.key`). |
-| `sensorfleet_nginx_sensorui_vhost_ssl_cert` | `false` | string (PEM content) or `false` | Certificate content to install at the path above. `false` (the default) skips installing a certificate via Ansible — leaving certificate management to `fleetcert`'s own renewal — while any truthy string content triggers installation and disables `fleetcert webui renew` for the FM-CA cert. |
+| `sensorfleet_nginx_sensorui_vhost_ssl_cert` | `false` | string (PEM content) or `false` | Certificate content to install at the path above. `false` (the default) skips installing a certificate via Ansible, leaving the self-signed certificate created by the `sensorfleet-sensor-ui` package in place (renewed by this role, see below), while any truthy string content triggers installation and disables `fleetcert webui renew` for the FM-CA cert. |
 | `sensorfleet_nginx_sensorui_vhost_ssl_key` | `false` | string (PEM content) or `false` | Private key content, same on/off pattern as the certificate above. |
 | `sensorfleet_nginx_sensorui_vhost_ssl_protocols` | `[TLSv1.2]` | list of strings | Rendered as nginx's `ssl_protocols` directive. |
 | `sensorfleet_nginx_sensorui_vhost_ssl_ciphers` | `[ECDHE-ECDSA-AES256-GCM-SHA384, ECDHE-ECDSA-AES256-SHA384]` | list of strings | Rendered as nginx's `ssl_ciphers` directive (colon-joined). |
@@ -211,6 +211,13 @@ Installs the SSL certificate/key nginx uses for the sensor UI vhost, and related
 | `sensorfleet_nginx_sensorui_vhost_ssl_prefer_server_ciphers` | `true` | bool | Rendered as nginx's `ssl_prefer_server_ciphers on`/`off`. |
 | `sensorfleet_nginx_sensorui_vhost_ssl_dhparams` | `false` | string (PEM content) or `false` | DH parameters content to install at the path below. Same on/off pattern as the certificate/key above — `false` skips installing one. |
 | `sensorfleet_nginx_sensorui_vhost_ssl_dhparams_path` | `false` | string (path) or `false` | Path the DH params file is written to and referenced from (`ssl_dhparam`); a falsy value omits the `ssl_dhparam` directive entirely. |
+| `sensorfleet_nginx_ui_cert_renew` | `true` | bool | Renew the package's self-signed UI certificate when it is close to expiry. Only applies when `/etc/ssl/sensorfleet/ui.crt` points to the self-signed certificate; custom certificates are never touched. Runs as part of the `nginx` tag, or on its own with `--tags renew_ui_cert`. |
+| `sensorfleet_nginx_ui_cert_force_renew` | `false` | bool | Renew the self-signed certificate regardless of its expiry date, e.g. `-e sensorfleet_nginx_ui_cert_force_renew=true`. |
+| `sensorfleet_nginx_ui_cert_valid_days` | `825` | int | Validity of a renewed certificate. Apple platforms reject TLS server certificates valid for more than 825 days, so keep this at 825 or lower if the UI is used from macOS/iOS. |
+| `sensorfleet_nginx_ui_cert_renew_before_days` | `14` | int | Renew when fewer than this many days of validity remain. |
+| `sensorfleet_nginx_ui_cert_extra_sans` | `[]` | list of strings | Subject alternative names added to a renewed certificate in addition to `DNS:<hostname>`, in OpenSSL format, e.g. `["DNS:fm.example.com", "IP:192.0.2.10"]`. |
+| `sensorfleet_nginx_ui_selfsigned_cert_path` | `/etc/ssl/certs/ssl-cert-snakeoil-ec.pem` | string (path) | Self-signed certificate created by the `sensorfleet-sensor-ui` package. Only renewed while `ui.crt` points to it. |
+| `sensorfleet_nginx_ui_selfsigned_key_path` | `/etc/ssl/private/ssl-cert-snakeoil-ec.key` | string (path) | Key of the self-signed certificate; reused for renewals. |
 
 ## sensorfleet_fleetgram
 

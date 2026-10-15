@@ -61,6 +61,10 @@
     state: link
   notify: Reload nginx
 
+- name: Renew self-signed UI certificate
+  ansible.builtin.import_tasks: ui_certificate_renewal.yml
+  tags: [renew_ui_cert]
+
 - name: Install nginx configuration
   ansible.builtin.template:
     src: nginx.conf.j2

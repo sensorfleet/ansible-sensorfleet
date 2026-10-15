@@ -1,0 +1,98 @@
+---
+# Renews the self-signed UI certificate created by the sensorfleet-sensor-ui
+# package. Custom certificates (ui.crt pointing elsewhere) are not touched.
+- name: Inspect UI certificate symlink
+  ansible.builtin.stat:
+    path: /etc/ssl/sensorfleet/ui.crt
+    follow: false
+  register: sensorfleet_nginx_ui_cert_link
+
+- name: Report skipped UI certificate renewal
+  ansible.builtin.debug:
+    msg: >-
+      Not renewing: /etc/ssl/sensorfleet/ui.crt
+      {{ ('-> ' ~ sensorfleet_nginx_ui_cert_link.stat.lnk_source) if sensorfleet_nginx_ui_cert_link.stat.islnk | default(false) else 'is not a symlink' }}
+      (only {{ sensorfleet_nginx_ui_selfsigned_cert_path }} is renewed)
+  when:
+    - sensorfleet_nginx_ui_cert_renew | bool
+    - not (sensorfleet_nginx_ui_cert_link.stat.islnk | default(false))
+      or sensorfleet_nginx_ui_cert_link.stat.lnk_source != sensorfleet_nginx_ui_selfsigned_cert_path
+
+- name: Renew self-signed UI certificate
+  when:
+    - sensorfleet_nginx_ui_cert_renew | bool
+    - sensorfleet_nginx_ui_cert_link.stat.islnk | default(false)
+    - sensorfleet_nginx_ui_cert_link.stat.lnk_source == sensorfleet_nginx_ui_selfsigned_cert_path
+  block:
+    - name: Check whether UI certificate expires within the renewal window
+      ansible.builtin.command:
+        argv:
+          - openssl
+          - x509
+          - -noout
+          - -enddate
+          - -in
+          - "{{ sensorfleet_nginx_ui_selfsigned_cert_path }}"
+          - -checkend
+          - "{{ sensorfleet_nginx_ui_cert_renew_before_days | int * 86400 }}"
+      register: sensorfleet_nginx_ui_cert_checkend
+      changed_when: false
+      failed_when: sensorfleet_nginx_ui_cert_checkend.rc not in [0, 1]
+      check_mode: false
+
+    - name: Report UI certificate renewal decision
+      ansible.builtin.debug:
+        msg: >-
+          {{ sensorfleet_nginx_ui_cert_checkend.stdout_lines | select('match', 'notAfter=') | first }},
+          renewal window {{ sensorfleet_nginx_ui_cert_renew_before_days }} days:
+          {{ 'forced renewal' if sensorfleet_nginx_ui_cert_force_renew | bool
+          else ('renewing' if sensorfleet_nginx_ui_cert_checkend.rc == 1 else 'not renewing') }}
+
+    - name: Replace expiring UI certificate
+      when: >-
+        sensorfleet_nginx_ui_cert_force_renew | bool or
+        sensorfleet_nginx_ui_cert_checkend.rc == 1
+      block:
+        - name: Get hostname for UI certificate
+          ansible.builtin.command: hostname
+          register: sensorfleet_nginx_ui_cert_hostname
+          changed_when: false
+          check_mode: false
+
+        - name: Generate new UI certificate with the existing key
+          ansible.builtin.command:
+            argv:
+              - openssl
+              - req
+              - -new
+              - -x509
+              - -key
+              - "{{ sensorfleet_nginx_ui_selfsigned_key_path }}"
+              - -subj
+              - "/CN={{ sensorfleet_nginx_ui_cert_hostname.stdout }}"
+              - -addext
+              - "subjectAltName = {{ (['DNS:' ~ sensorfleet_nginx_ui_cert_hostname.stdout] + sensorfleet_nginx_ui_cert_extra_sans) | join(',') }}"
+              - -days
+              - "{{ sensorfleet_nginx_ui_cert_valid_days }}"
+              - -out
+              - "{{ sensorfleet_nginx_ui_selfsigned_cert_path }}.new"
+          changed_when: false
+          check_mode: false
+
+        - name: Install new UI certificate
+          ansible.builtin.copy:
+            src: "{{ sensorfleet_nginx_ui_selfsigned_cert_path }}.new"
+            dest: "{{ sensorfleet_nginx_ui_selfsigned_cert_path }}"
+            remote_src: true
+            backup: true
+            owner: root
+            group: root
+            mode: "0644"
+          notify: Reload nginx
+
+        - name: Remove temporary UI certificate
+          ansible.builtin.file:
+            path: "{{ sensorfleet_nginx_ui_selfsigned_cert_path }}.new"
+            state: absent
+          changed_when: false
+          check_mode: false
