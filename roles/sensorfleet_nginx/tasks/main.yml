@@ -6,7 +6,7 @@
     owner: root
     group: www-data
     mode: "0640"
-  when: sensorfleet_nginx_sensorui_vhost_ssl_cert
+  when: sensorfleet_nginx_sensorui_vhost_ssl_cert not in [none, false, '']
   notify: Reload nginx
 
 - name: Install nginx vhost SSL key
@@ -16,7 +16,7 @@
     owner: root
     group: www-data
     mode: "0640"
-  when: sensorfleet_nginx_sensorui_vhost_ssl_key
+  when: sensorfleet_nginx_sensorui_vhost_ssl_key not in [none, false, '']
   notify: Reload nginx
 
 - name: Install nginx vhost SSL DH parameters
@@ -26,7 +26,7 @@
     owner: root
     group: root
     mode: "0640"
-  when: sensorfleet_nginx_sensorui_vhost_ssl_dhparams
+  when: sensorfleet_nginx_sensorui_vhost_ssl_dhparams not in [none, false, '']
   notify: Reload nginx
 
 - name: Install nginx UI vhost SSL options
@@ -44,21 +44,47 @@
   changed_when: sensorfleet_nginx_webui_renew_disable.stderr_lines | length > 0
   failed_when: false
   when: >-
-    sensorfleet_nginx_sensorui_vhost_ssl_cert or
-    sensorfleet_nginx_sensorui_vhost_ssl_key
+    sensorfleet_nginx_sensorui_vhost_ssl_cert not in [none, false, ''] or
+    sensorfleet_nginx_sensorui_vhost_ssl_key not in [none, false, '']
 
+# On FM, fleetcert creates or renews the FM-CA certificate only when needed and manages the
+# package-provided /etc/ssl/sensorfleet/ui.crt and ui.key symlinks itself
+- name: Create nginx UI certificate with fleetcert
+  ansible.builtin.command: >-
+    fleetcert webui cert
+    {% for sensorfleet_nginx_webui_san in [sensorfleet_nginx_webui_subjectaltname] + sensorfleet_nginx_webui_additional_subjectaltnames %}
+    --san {{ sensorfleet_nginx_webui_san | quote }}
+    {% endfor %}
+  register: sensorfleet_nginx_webui_cert
+  changed_when: >-
+    'No certificate creation or renewal needed at this time'
+    not in sensorfleet_nginx_webui_cert.stdout
+  when:
+    - "'fleetmgmt' in group_names"
+    - not sensorfleet_nginx_sensorui_vhost_ssl_cert_path
+  notify: Reload nginx
+
+# Custom certificate if configured, otherwise sensors use their internal certificate
 - name: Create nginx UI certificate symlink
   ansible.builtin.file:
-    src: "{{ sensorfleet_nginx_sensorui_vhost_ssl_cert_path }}"
+    src: >-
+      {{ sensorfleet_nginx_sensorui_vhost_ssl_cert_path
+         if sensorfleet_nginx_sensorui_vhost_ssl_cert_path
+         else '/etc/ssl/sensorfleet/internal.crt' }}
     dest: /etc/ssl/sensorfleet/ui.crt
     state: link
+  when: sensorfleet_nginx_sensorui_vhost_ssl_cert_path not in [none, false, ''] or 'fleetmgmt' not in group_names
   notify: Reload nginx
 
 - name: Create nginx UI key symlink
   ansible.builtin.file:
-    src: "{{ sensorfleet_nginx_sensorui_vhost_ssl_key_path }}"
+    src: >-
+      {{ sensorfleet_nginx_sensorui_vhost_ssl_key_path
+         if sensorfleet_nginx_sensorui_vhost_ssl_cert_path
+         else '/etc/ssl/sensorfleet/internal.key' }}
     dest: /etc/ssl/sensorfleet/ui.key
     state: link
+  when: sensorfleet_nginx_sensorui_vhost_ssl_cert_path not in [none, false, ''] or 'fleetmgmt' not in group_names
   notify: Reload nginx
 
 - name: Install nginx configuration
