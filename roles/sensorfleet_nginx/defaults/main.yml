@@ -13,3 +13,5 @@ sensorfleet_nginx_sensorui_vhost_ssl_ecdh_curve: secp384r1
 sensorfleet_nginx_sensorui_vhost_ssl_prefer_server_ciphers: true
 sensorfleet_nginx_sensorui_vhost_ssl_dhparams: false
 sensorfleet_nginx_sensorui_vhost_ssl_dhparams_path: false
+sensorfleet_nginx_webui_subjectaltname: "{{ inventory_hostname }}"
+sensorfleet_nginx_webui_additional_subjectaltnames: []
