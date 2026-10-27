@@ -206,12 +206,12 @@ Renders `/etc/ssh/sshd_config` (validated with `sshd -t` before being applied) a
 
 ## sensorfleet_nginx
 
-Installs the SSL certificate/key nginx uses for the sensor UI vhost, and related TLS options.
+Manages the SSL certificate/key nginx uses for the sensor UI vhost, and related TLS options. By default (no `sensorfleet_nginx_sensorui_vhost_ssl_cert_path`): on fleetmgmt the role runs `fleetcert webui cert --san <sensorfleet_nginx_webui_subjectaltname>` (plus `sensorfleet_nginx_webui_additional_subjectaltnames`) on every run, and fleetcert creates or renews the FM-CA-issued UI certificate only when needed and manages the package-provided `/etc/ssl/sensorfleet/ui.crt`/`ui.key` symlinks itself; on sensors the role points `ui.crt`/`ui.key` at the host's internal certificate (`/etc/ssl/sensorfleet/internal.crt`/`internal.key`, managed by `sensorfleet_internal_certificates`). Setting the path variables switches any host to a custom certificate instead.
 
 | Variable | Default | Type | Description |
 |---|---|---|---|
-| `sensorfleet_nginx_sensorui_vhost_ssl_cert_path` | `null` | string (path) or `null` | Filesystem path the certificate is written to (also symlinked from `/etc/ssl/sensorfleet/ui.crt`). Must be set whenever `sensorfleet_nginx_sensorui_vhost_ssl_cert` is used. |
-| `sensorfleet_nginx_sensorui_vhost_ssl_key_path` | `null` | string (path) or `null` | Filesystem path the private key is written to (also symlinked from `/etc/ssl/sensorfleet/ui.key`). |
+| `sensorfleet_nginx_sensorui_vhost_ssl_cert_path` | `null` | string (path) or `null` | Filesystem path the certificate is written to (also symlinked from `/etc/ssl/sensorfleet/ui.crt`). Must be set whenever `sensorfleet_nginx_sensorui_vhost_ssl_cert` is used. `null` (the default) means fleetmgmt uses the FM-CA certificate from `fleetcert webui cert` (the `ui.crt` symlink is left to fleetcert), and sensors link `ui.crt` to `/etc/ssl/sensorfleet/internal.crt`. |
+| `sensorfleet_nginx_sensorui_vhost_ssl_key_path` | `null` | string (path) or `null` | Filesystem path the private key is written to (also symlinked from `/etc/ssl/sensorfleet/ui.key`). Only used when `sensorfleet_nginx_sensorui_vhost_ssl_cert_path` is set. Otherwise fleetmgmt leaves the `ui.key` symlink to fleetcert, and sensors link it to `/etc/ssl/sensorfleet/internal.key`. |
 | `sensorfleet_nginx_sensorui_vhost_ssl_cert` | `false` | string (PEM content) or `false` | Certificate content to install at the path above. `false` (the default) skips installing a certificate via Ansible — leaving certificate management to `fleetcert`'s own renewal — while any truthy string content triggers installation and disables `fleetcert webui renew` for the FM-CA cert. |
 | `sensorfleet_nginx_sensorui_vhost_ssl_key` | `false` | string (PEM content) or `false` | Private key content, same on/off pattern as the certificate above. |
 | `sensorfleet_nginx_sensorui_vhost_ssl_protocols` | `[TLSv1.2]` | list of strings | Rendered as nginx's `ssl_protocols` directive. |
@@ -220,6 +220,8 @@ Installs the SSL certificate/key nginx uses for the sensor UI vhost, and related
 | `sensorfleet_nginx_sensorui_vhost_ssl_prefer_server_ciphers` | `true` | bool | Rendered as nginx's `ssl_prefer_server_ciphers on`/`off`. |
 | `sensorfleet_nginx_sensorui_vhost_ssl_dhparams` | `false` | string (PEM content) or `false` | DH parameters content to install at the path below. Same on/off pattern as the certificate/key above — `false` skips installing one. |
 | `sensorfleet_nginx_sensorui_vhost_ssl_dhparams_path` | `false` | string (path) or `false` | Path the DH params file is written to and referenced from (`ssl_dhparam`); a falsy value omits the `ssl_dhparam` directive entirely. |
+| `sensorfleet_nginx_webui_subjectaltname` | `{{ inventory_hostname }}` | string | Primary subject alternative name for the FM-CA web UI certificate created by `fleetcert webui cert` on fleetmgmt, passed as the first `--san`. Not used on sensors or when a custom certificate path is set. |
+| `sensorfleet_nginx_webui_additional_subjectaltnames` | `[]` | list of strings | Extra subject alternative names for the FM-CA web UI certificate created by `fleetcert webui cert` on fleetmgmt, each passed as an additional `--san` after `sensorfleet_nginx_webui_subjectaltname`. Not used on sensors or when a custom certificate path is set. |
 
 ## sensorfleet_fleetgram
 
